@@ -3,19 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>3D Print Feedback</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="login-container">
-        <h1>🔐 로그인</h1>
-        <form id="login-form">
-            <input type="text" name="username" placeholder="USERNAME" required>
-            <input type="password" name="password" placeholder="PASSWORD" required>
-            <input type="submit" value="Log in">
-        </form>
-        <a href="join.html">Create Account</a>
+    <header>
+        <h1>3D Print Feedback</h1>
+    </header>
+
+    <main>
+        <div class="gallery">
+            <div class="gallery-item" data-id="1" data-img-src="https://images.unsplash.com/photo-1604719312566-8912e9227c6a?q=80&w=2070&auto=format&fit=crop">
+                <img src="https://images.unsplash.com/photo-1604719312566-8912e9227c6a?q=80&w=2070&auto=format&fit=crop" alt="3D Print 1">
+            </div>
+            <div class="gallery-item" data-id="2" data-img-src="https://images.unsplash.com/photo-1593344484962-796b36d0808c?q=80&w=2070&auto=format&fit=crop">
+                <img src="https://images.unsplash.com/photo-1593344484962-796b36d0808c?q=80&w=2070&auto=format&fit=crop" alt="3D Print 2">
+            </div>
+            <div class="gallery-item" data-id="3" data-img-src="https://images.unsplash.com/photo-1543289942-c65c85a33230?q=80&w=2070&auto=format&fit=crop">
+                <img src="https://images.unsplash.com/photo-1543289942-c65c85a33230?q=80&w=2070&auto=format&fit=crop" alt="3D Print 3">
+            </div>
+        </div>
+    </main>
+
+    <div id="feedback-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <img id="modal-img" src="" alt="3D Print">
+            <h2>Feedback</h2>
+            <form id="feedback-form">
+                <input type="hidden" id="print-id" name="print_id">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required>
+                <label for="rating">Rating:</label>
+                <div class="star-rating">
+                    <span class="star" data-value="1">&#9733;</span>
+                    <span class="star" data-value="2">&#9733;</span>
+                    <span class="star" data-value="3">&#9733;</span>
+                    <span class="star" data-value="4">&#9733;</span>
+                    <span class="star" data-value="5">&#9733;</span>
+                </div>
+                <input type="hidden" id="rating" name="rating" value="0">
+                <label for="comments">Comments:</label>
+                <textarea id="comments" name="comments" rows="4" required></textarea>
+                <input type="submit" value="Submit Feedback">
+            </form>
+        </div>
     </div>
+
     <script src="main.js"></script>
 </body>
 </html>
