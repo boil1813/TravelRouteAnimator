@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Form, ListGroup, Spinner } from 'react-bootstrap';
 
-const Sidebar = ({ locations, addLocation, removeLocation, onPlay, isPlaying, speed, setSpeed, vehicle, setVehicle, version }) => {
+const Sidebar = ({ locations, addLocation, removeLocation, onPlay, onPause, onResume, onStop, isPlaying, isPaused, speed, setSpeed, vehicle, setVehicle, version }) => {
     const [query, setQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -115,19 +115,31 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, isPlaying, sp
             </div>
 
             <div className="d-grid gap-2">
-                <Button 
-                    variant={isPlaying ? "secondary" : "success"} 
-                    size="lg"
-                    onClick={onPlay}
-                    disabled={locations.length < 2 || isPlaying}
-                >
-                    {isPlaying ? (
-                        <>
-                            <Spinner as="span" animation="grow" size="sm" role="status" aria-hidden="true" className="me-2"/>
-                            재생 중...
-                        </>
-                    ) : '▶ 경로 애니메이션 재생'}
-                </Button>
+                {!isPlaying ? (
+                    <Button 
+                        variant="success" 
+                        size="lg"
+                        onClick={onPlay}
+                        disabled={locations.length < 2}
+                    >
+                        ▶ 경로 애니메이션 재생
+                    </Button>
+                ) : (
+                    <div className="d-flex gap-2">
+                        {isPaused ? (
+                            <Button variant="info" size="lg" className="w-50 text-white" onClick={onResume}>
+                                ▶ 재개
+                            </Button>
+                        ) : (
+                            <Button variant="warning" size="lg" className="w-50 text-white" onClick={onPause}>
+                                ⏸ 일시정지
+                            </Button>
+                        )}
+                        <Button variant="danger" size="lg" className="w-50" onClick={onStop}>
+                            ⏹ 종료
+                        </Button>
+                    </div>
+                )}
             </div>
             {locations.length < 2 && (
                 <div className="text-center mt-2 small text-muted">최소 2개 이상의 장소를 추가해주세요.</div>
