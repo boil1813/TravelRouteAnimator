@@ -144,6 +144,19 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, onPause, onRe
             {locations.length < 2 && (
                 <div className="text-center mt-2 small text-muted">최소 2개 이상의 장소를 추가해주세요.</div>
             )}
+            
+            <div className="mt-auto pt-3 border-top">
+                <small className="text-muted d-block text-center mb-1" style={{ fontSize: '0.75rem' }}>Sponsored</small>
+                {/* 
+                    [Google AdSense Area] 
+                    Paste your AdSense script code here.
+                    For example: <ins className="adsbygoogle" ...></ins>
+                */}
+                <div className="bg-white border rounded d-flex align-items-center justify-content-center text-muted small" 
+                     style={{ height: '100px', backgroundColor: '#f8f9fa' }}>
+                    Google AdSense<br/>Place Here
+                </div>
+            </div>
         </div>
     );
 };

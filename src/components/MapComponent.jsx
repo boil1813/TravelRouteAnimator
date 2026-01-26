@@ -15,15 +15,105 @@ function calculateBearing(lat1, lon1, lat2, lon2) {
 }
 
 const getVehicleSVG = (type, isFlying) => {
-    const shadow = 'filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));';
+    const shadow = 'filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));';
+    
+    // Common styles for cute aesthetic
+    // Car body style: Rounded, slightly cartoonish
+    
     if (isFlying && type !== 'plane') {
-        return `<svg viewBox="0 0 64 64" width="80" height="80" style="${shadow} overflow: visible;"><g transform="rotate(0 32 32)"><path fill="#9c27b0" d="M32 2 L38 22 L62 32 L38 38 L32 62 L26 38 L2 32 L26 22 Z" /><path fill="#7b1fa2" d="M32 2 L32 62 L26 38 L26 22 Z" opacity="0.5"/><circle cx="32" cy="32" r="5" fill="white" opacity="0.8"/></g></svg>`;
+        // "Flying" generic vehicle effect (maybe wings on the car?) -> Let's keep a cute generic flying saucer or winged dot
+        return `<svg viewBox="0 0 64 64" width="80" height="80" style="${shadow} overflow: visible;"><g transform="rotate(0 32 32)">
+            <ellipse cx="32" cy="32" rx="20" ry="12" fill="#e040fb" stroke="#7b1fa2" stroke-width="2"/>
+            <path d="M12 32 Q32 10 52 32" fill="#f3e5f5" opacity="0.8"/>
+            <circle cx="32" cy="24" r="8" fill="#e1bee7" />
+            <circle cx="20" cy="40" r="3" fill="white" opacity="0.6"/>
+            <circle cx="32" cy="42" r="3" fill="white" opacity="0.6"/>
+            <circle cx="44" cy="40" r="3" fill="white" opacity="0.6"/>
+        </g></svg>`;
     }
+
     switch (type) {
-        case 'car-blue': return `<svg viewBox="0 0 64 64" width="60" height="60" style="${shadow}"><path fill="#1565c0" d="M12 40 L16 16 L48 16 L52 40 Z" /><path fill="#0d47a1" d="M12 40 L52 40 L52 56 L12 56 Z" /><rect x="14" y="44" width="10" height="6" fill="#ff5252" /><rect x="40" y="44" width="10" height="6" fill="#ff5252" /><rect x="20" y="20" width="24" height="12" fill="#81d4fa" opacity="0.6" /></svg>`;
-        case 'bus': return `<svg viewBox="0 0 64 64" width="70" height="70" style="${shadow}"><rect x="14" y="10" width="36" height="40" fill="#fbc02d" rx="2" /><rect x="14" y="50" width="36" height="12" fill="#f9a825" /><rect x="16" y="52" width="8" height="6" fill="#d32f2f" /><rect x="40" y="52" width="8" height="6" fill="#d32f2f" /><rect x="18" y="14" width="28" height="26" fill="#4fc3f7" opacity="0.6" /></svg>`;
-        case 'plane': return `<svg viewBox="0 0 64 64" width="80" height="80" style="${shadow}"><path fill="#eeeeee" d="M32 4 L40 24 L62 36 L40 42 L32 60 L24 42 L2 36 L24 24 Z" /><path fill="#bdbdbd" d="M32 4 L32 60 L24 42 L24 24 Z" opacity="0.5"/></svg>`;
-        case 'car-red': default: return `<svg viewBox="0 0 64 64" width="60" height="60" style="${shadow}"><path fill="#d32f2f" d="M16 36 L20 16 L44 16 L48 36 Z" /><path fill="#b71c1c" d="M12 36 L52 36 L50 52 L14 52 Z" /><rect x="14" y="40" width="10" height="5" fill="#ffeb3b" /><rect x="40" y="40" width="10" height="5" fill="#ffeb3b" /><rect x="20" y="20" width="24" height="10" fill="#212121" opacity="0.8" /></svg>`;
+        case 'car-blue': 
+            // Cute Blue Car: Rounded beetle style
+            return `<svg viewBox="0 0 64 64" width="60" height="60" style="${shadow}">
+                <g transform="translate(0, -4)">
+                    <!-- Wheels -->
+                    <circle cx="18" cy="48" r="7" fill="#333" />
+                    <circle cx="46" cy="48" r="7" fill="#333" />
+                    <circle cx="18" cy="48" r="3" fill="#ddd" />
+                    <circle cx="46" cy="48" r="3" fill="#ddd" />
+                    <!-- Body -->
+                    <path d="M10 48 L10 36 Q10 20 32 20 Q54 20 54 36 L54 48 Z" fill="#42a5f5" />
+                    <rect x="8" y="38" width="48" height="12" rx="4" fill="#1e88e5" />
+                    <!-- Windows -->
+                    <path d="M16 36 L16 30 Q16 24 32 24 Q48 24 48 30 L48 36 Z" fill="#e3f2fd" />
+                    <!-- Lights -->
+                    <circle cx="10" cy="40" r="2.5" fill="#ffeb3b" />
+                    <circle cx="54" cy="40" r="2.5" fill="#ffeb3b" />
+                </g>
+            </svg>`;
+            
+        case 'bus': 
+            // Cute Bus: Rounded loaf
+            return `<svg viewBox="0 0 64 64" width="70" height="70" style="${shadow}">
+                <g transform="translate(0, -4)">
+                    <!-- Wheels -->
+                    <circle cx="16" cy="50" r="6" fill="#333" />
+                    <circle cx="48" cy="50" r="6" fill="#333" />
+                    <circle cx="16" cy="50" r="2.5" fill="#999" />
+                    <circle cx="48" cy="50" r="2.5" fill="#999" />
+                    <!-- Body -->
+                    <rect x="8" y="14" width="48" height="38" rx="8" fill="#fbc02d" />
+                    <rect x="8" y="34" width="48" height="18" rx="4" fill="#f9a825" />
+                    <!-- Stripe -->
+                    <rect x="6" y="30" width="52" height="4" fill="#d32f2f" rx="1" />
+                    <!-- Windows -->
+                    <rect x="12" y="18" width="10" height="10" rx="2" fill="#e1f5fe" />
+                    <rect x="24" y="18" width="10" height="10" rx="2" fill="#e1f5fe" />
+                    <rect x="36" y="18" width="10" height="10" rx="2" fill="#e1f5fe" />
+                    <!-- Headlights -->
+                    <circle cx="10" cy="44" r="2" fill="#fff" />
+                    <circle cx="54" cy="44" r="2" fill="#fff" />
+                </g>
+            </svg>`;
+            
+        case 'plane': 
+            // Cute Plane: Tubby
+            return `<svg viewBox="0 0 64 64" width="80" height="80" style="${shadow}">
+                <g transform="rotate(-45 32 32)">
+                    <!-- Wings -->
+                    <path d="M32 24 L56 36 L32 44 L8 36 Z" fill="#90caf9" />
+                    <!-- Tail -->
+                    <path d="M32 52 L42 60 L22 60 Z" fill="#64b5f6" />
+                    <!-- Body -->
+                    <ellipse cx="32" cy="32" rx="14" ry="24" fill="#eeeeee" />
+                    <!-- Cockpit -->
+                    <ellipse cx="32" cy="18" rx="8" ry="5" fill="#4fc3f7" />
+                    <!-- Engine/Propeller Hint -->
+                    <circle cx="32" cy="10" r="2" fill="#ef5350" />
+                </g>
+            </svg>`;
+            
+        case 'car-red': 
+        default: 
+            // Cute Red Car
+            return `<svg viewBox="0 0 64 64" width="60" height="60" style="${shadow}">
+                <g transform="translate(0, -4)">
+                    <!-- Wheels -->
+                    <circle cx="18" cy="48" r="7" fill="#333" />
+                    <circle cx="46" cy="48" r="7" fill="#333" />
+                    <circle cx="18" cy="48" r="3" fill="#ddd" />
+                    <circle cx="46" cy="48" r="3" fill="#ddd" />
+                    <!-- Body -->
+                    <path d="M10 48 L10 36 Q10 22 32 22 Q54 22 54 36 L54 48 Z" fill="#ef5350" />
+                    <rect x="8" y="38" width="48" height="12" rx="4" fill="#c62828" />
+                    <!-- Windows -->
+                    <path d="M16 36 L16 32 Q16 26 32 26 Q48 26 48 32 L48 36 Z" fill="#ffebee" />
+                    <!-- Lights -->
+                    <circle cx="10" cy="40" r="2.5" fill="#fff59d" />
+                    <circle cx="54" cy="40" r="2.5" fill="#fff59d" />
+                </g>
+            </svg>`;
     }
 };
 
