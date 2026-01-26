@@ -26,7 +26,60 @@ function calculateBearing(lat1, lon1, lat2, lon2) {
     return (brng * 180 / Math.PI + 360) % 360;
 }
 
-const MapComponent = ({ locations, isPlaying, onAnimationEnd, speed }) => {
+// 3D-ish SVG Icons (Isometric Rear View)
+const getVehicleSVG = (type, isFlying) => {
+    const shadow = 'filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));';
+    
+    // Auto-switch to plane for long distances if not already a plane
+    if (isFlying && type !== 'plane') {
+        return `<svg viewBox="0 0 64 64" width="80" height="80" style="${shadow} overflow: visible;">
+            <g transform="rotate(0 32 32)">
+                <path fill="#9c27b0" d="M32 2 L38 22 L62 32 L38 38 L32 62 L26 38 L2 32 L26 22 Z" />
+                <path fill="#7b1fa2" d="M32 2 L32 62 L26 38 L26 22 Z" opacity="0.5"/>
+                <circle cx="32" cy="32" r="5" fill="white" opacity="0.8"/>
+            </g>
+        </svg>`;
+    }
+
+    switch (type) {
+        case 'car-blue':
+            // Blue SUV
+            return `<svg viewBox="0 0 64 64" width="60" height="60" style="${shadow}">
+                <path fill="#1565c0" d="M12 40 L16 16 L48 16 L52 40 Z" /> <!-- Roof/Windshield -->
+                <path fill="#0d47a1" d="M12 40 L52 40 L52 56 L12 56 Z" /> <!-- Back -->
+                <rect x="14" y="44" width="10" height="6" fill="#ff5252" /> <!-- Left Light -->
+                <rect x="40" y="44" width="10" height="6" fill="#ff5252" /> <!-- Right Light -->
+                <rect x="20" y="20" width="24" height="12" fill="#81d4fa" opacity="0.6" /> <!-- Rear Window -->
+            </svg>`;
+        case 'bus':
+            // Yellow Bus
+            return `<svg viewBox="0 0 64 64" width="70" height="70" style="${shadow}">
+                <rect x="14" y="10" width="36" height="40" fill="#fbc02d" rx="2" /> <!-- Top -->
+                <rect x="14" y="50" width="36" height="12" fill="#f9a825" /> <!-- Back -->
+                <rect x="16" y="52" width="8" height="6" fill="#d32f2f" />
+                <rect x="40" y="52" width="8" height="6" fill="#d32f2f" />
+                <rect x="18" y="14" width="28" height="26" fill="#4fc3f7" opacity="0.6" /> <!-- Window -->
+            </svg>`;
+        case 'plane':
+            // White Plane
+            return `<svg viewBox="0 0 64 64" width="80" height="80" style="${shadow}">
+                <path fill="#eeeeee" d="M32 4 L40 24 L62 36 L40 42 L32 60 L24 42 L2 36 L24 24 Z" />
+                <path fill="#bdbdbd" d="M32 4 L32 60 L24 42 L24 24 Z" opacity="0.5"/>
+            </svg>`;
+        case 'car-red':
+        default:
+            // Red Sports Car (Default)
+            return `<svg viewBox="0 0 64 64" width="60" height="60" style="${shadow}">
+                <path fill="#d32f2f" d="M16 36 L20 16 L44 16 L48 36 Z" /> <!-- Roof -->
+                <path fill="#b71c1c" d="M12 36 L52 36 L50 52 L14 52 Z" /> <!-- Back Body -->
+                <rect x="14" y="40" width="10" height="5" fill="#ffeb3b" /> <!-- Light -->
+                <rect x="40" y="40" width="10" height="5" fill="#ffeb3b" /> <!-- Light -->
+                <rect x="20" y="20" width="24" height="10" fill="#212121" opacity="0.8" /> <!-- Window -->
+            </svg>`;
+    }
+};
+
+const MapComponent = ({ locations, isPlaying, onAnimationEnd, speed, vehicle }) => {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const marker = useRef(null);
@@ -68,17 +121,15 @@ const MapComponent = ({ locations, isPlaying, onAnimationEnd, speed }) => {
 
         map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-        // Initial Marker (Hidden initially or default pos)
+        // Initial Marker
         const el = document.createElement('div');
         el.className = 'traveler-marker';
-        // Wrapper for rotation
         el.innerHTML = `<div id="traveler-icon-wrapper" style="transition: transform 0.1s linear;"></div>`;
         
         marker.current = new maplibregl.Marker({ element: el })
             .setLngLat([127.5, 36.5])
             .addTo(map.current);
             
-        // Hide marker initially until locations exist
         marker.current.getElement().style.opacity = '0';
 
     }, []);
@@ -89,21 +140,26 @@ const MapComponent = ({ locations, isPlaying, onAnimationEnd, speed }) => {
         const mapInstance = map.current;
 
         const draw = () => {
-            // Update Marker visibility
             if (locations.length > 0) {
                  marker.current.setLngLat([locations[0].lng, locations[0].lat]);
                  marker.current.getElement().style.opacity = '1';
+                 // Show initial icon
+                 const iconWrapper = document.getElementById('traveler-icon-wrapper');
+                 if (iconWrapper) {
+                     // Check if first leg is flight
+                     let isFlying = false;
+                     if (locations.length > 1) {
+                         const dist = calculateDistance(locations[0].lat, locations[0].lng, locations[1].lat, locations[1].lng);
+                         isFlying = dist > 400;
+                     }
+                     iconWrapper.innerHTML = getVehicleSVG(vehicle, isFlying);
+                 }
             }
 
-            // Remove existing route
             if (mapInstance.getSource('route')) {
                 if (mapInstance.getLayer('route-layer')) mapInstance.removeLayer('route-layer');
                 mapInstance.removeSource('route');
             }
-
-            // Add Markers for start/stops (Simple HTML markers)
-            // Note: For cleaner code, we are just drawing lines now. 
-            // Ideally we should manage a list of Markers for each stop.
 
             if (locations.length > 1) {
                 const coordinates = locations.map(l => [l.lng, l.lat]);
@@ -129,13 +185,12 @@ const MapComponent = ({ locations, isPlaying, onAnimationEnd, speed }) => {
                         'line-cap': 'round'
                     },
                     paint: {
-                        'line-color': '#3388ff',
+                        'line-color': '#ff0055', // More visible pink/red color like Travel Boast
                         'line-width': 8,
-                        'line-opacity': 0.8
+                        'line-opacity': 0.9
                     }
                 });
                 
-                // Fit bounds if not playing
                 if (!isPlaying) {
                     const bounds = new maplibregl.LngLatBounds();
                     coordinates.forEach(coord => bounds.extend(coord));
@@ -149,7 +204,7 @@ const MapComponent = ({ locations, isPlaying, onAnimationEnd, speed }) => {
         } else {
             mapInstance.once('load', draw);
         }
-    }, [locations, isPlaying]);
+    }, [locations, isPlaying, vehicle]);
 
     // Animation Logic
     useEffect(() => {
@@ -159,12 +214,11 @@ const MapComponent = ({ locations, isPlaying, onAnimationEnd, speed }) => {
         let startTime = null;
         let currentSegment = 0;
         
-        // Setup initial camera
         const startLoc = locations[0];
         mapInstance.jumpTo({
             center: [startLoc.lng, startLoc.lat],
-            zoom: 14, // Closer zoom for "Travel Boast" feel
-            pitch: 60, // 3D tilt
+            zoom: 13,
+            pitch: 60,
             bearing: calculateBearing(startLoc.lat, startLoc.lng, locations[1].lat, locations[1].lng)
         });
 
@@ -172,16 +226,19 @@ const MapComponent = ({ locations, isPlaying, onAnimationEnd, speed }) => {
 
         const updateIcon = (flying) => {
              if (iconWrapper) {
-                 iconWrapper.innerHTML = flying 
-                    ? `<svg viewBox="0 0 24 24" fill="#9c27b0" stroke="white" stroke-width="2" width="60" height="60" style="filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>`
-                    : `<svg viewBox="0 0 24 24" fill="#f44336" stroke="white" stroke-width="2" width="60" height="60" style="filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/> </svg>`;
+                 iconWrapper.innerHTML = getVehicleSVG(vehicle, flying);
              }
         };
 
         const animate = (timestamp) => {
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
-            const segmentDuration = 2000 / speed;
+            
+            // Adjusted speed: Base 5000ms (slower) / speed factor
+            // speed 0.1 => 50000ms (50s) per segment (very slow)
+            // speed 1.0 => 5000ms (5s) per segment
+            // speed 3.0 => 1666ms (1.6s) per segment
+            const segmentDuration = 5000 / speed;
 
             if (elapsed < segmentDuration) {
                 const progress = elapsed / segmentDuration;
@@ -191,31 +248,20 @@ const MapComponent = ({ locations, isPlaying, onAnimationEnd, speed }) => {
                 const lat = start.lat + (end.lat - start.lat) * progress;
                 const lng = start.lng + (end.lng - start.lng) * progress;
                 
-                // Update marker
                 marker.current.setLngLat([lng, lat]);
                 
                 const bearing = calculateBearing(start.lat, start.lng, end.lat, end.lng);
                 
-                // Rotate Icon Wrapper (Local rotation)
-                // Note: Marker rotation in GL aligns with screen by default.
-                // If we want the car to align with the road ON THE MAP, we set rotationAlignment to 'map'.
-                // But here we are rotating the camera too.
-                // "Travel Boast" style: Camera follows from behind. So the car stays relatively fixed in screen orientation (pointing up), and the map rotates under it.
-                // Let's try that: Bearing sets the camera. Car points UP.
-                
-                // Option A: Camera follows bearing. Car points UP (fixed).
                 if (iconWrapper) {
-                    // Slight vibration
-                    const vibe = Math.sin(timestamp / 50) * 1;
+                    const vibe = Math.sin(timestamp / 50) * 1.5; // Stronger vibe
                     iconWrapper.style.transform = `translateY(${vibe}px)`; 
-                    // No rotation needed if camera follows bearing! The car always faces forward (up).
                 }
 
                 mapInstance.jumpTo({
                     center: [lng, lat],
-                    bearing: bearing, // Camera rotates to match path
+                    bearing: bearing, 
                     pitch: 60,
-                    zoom: 14 // Can vary zoom based on speed if desired
+                    zoom: 13 // Constant close zoom
                 });
 
                 animationRef.current = requestAnimationFrame(animate);
@@ -232,12 +278,15 @@ const MapComponent = ({ locations, isPlaying, onAnimationEnd, speed }) => {
                     animationRef.current = requestAnimationFrame(animate);
                 } else {
                     onAnimationEnd();
-                    // Optional: Zoom out to see result
+                    // Zoom out to see full path
+                    const coordinates = locations.map(l => [l.lng, l.lat]);
+                    const bounds = new maplibregl.LngLatBounds();
+                    coordinates.forEach(coord => bounds.extend(coord));
+                    mapInstance.fitBounds(bounds, { padding: 50, pitch: 0, bearing: 0 });
                 }
             }
         };
         
-        // Initial setup
         const firstDist = calculateDistance(locations[0].lat, locations[0].lng, locations[1].lat, locations[1].lng);
         updateIcon(firstDist > 400);
 
@@ -246,7 +295,7 @@ const MapComponent = ({ locations, isPlaying, onAnimationEnd, speed }) => {
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
-    }, [isPlaying, locations, speed, onAnimationEnd]);
+    }, [isPlaying, locations, speed, onAnimationEnd, vehicle]);
 
     return (
         <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Form, ListGroup, Spinner } from 'react-bootstrap';
 
-const Sidebar = ({ locations, addLocation, removeLocation, onPlay, isPlaying, speed, setSpeed }) => {
+const Sidebar = ({ locations, addLocation, removeLocation, onPlay, isPlaying, speed, setSpeed, vehicle, setVehicle, version }) => {
     const [query, setQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -39,7 +39,10 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, isPlaying, sp
 
     return (
         <div className="d-flex flex-column bg-light border-end p-3 shadow-sm" style={{ width: '350px', height: '100%', minWidth: '300px', zIndex: 1000 }}>
-            <h4 className="mb-4 text-primary fw-bold">✈️ 여행 경로 애니메이터</h4>
+            <h4 className="mb-4 text-primary fw-bold d-flex align-items-center justify-content-between">
+                <span>✈️ 여행 경로</span>
+                <span className="badge bg-secondary rounded-pill fs-6 fw-normal" style={{ fontSize: '0.6em' }}>v{version}</span>
+            </h4>
             
             <Form onSubmit={handleSearch} className="mb-3">
                 <Form.Group className="mb-2">
@@ -83,14 +86,28 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, isPlaying, sp
             </div>
 
             <div className="mb-3 px-1">
-                <Form.Label className="small text-muted d-flex justify-content-between">
+                <Form.Label className="small text-muted mb-1">이동 수단</Form.Label>
+                <Form.Select 
+                    value={vehicle} 
+                    onChange={(e) => setVehicle(e.target.value)} 
+                    disabled={isPlaying}
+                    size="sm"
+                    className="mb-3"
+                >
+                    <option value="car-red">🚗 스포츠카 (빨강)</option>
+                    <option value="car-blue">🚙 SUV (파랑)</option>
+                    <option value="bus">🚌 투어 버스</option>
+                    <option value="plane">✈️ 비행기 (전용)</option>
+                </Form.Select>
+
+                <Form.Label className="small text-muted d-flex justify-content-between mb-1">
                     <span>이동 속도</span>
                     <span className="fw-bold">{speed}x</span>
                 </Form.Label>
                 <Form.Range 
-                    min={0.5} 
-                    max={5} 
-                    step={0.5} 
+                    min={0.1} 
+                    max={3.0} 
+                    step={0.1} 
                     value={speed} 
                     onChange={(e) => setSpeed(parseFloat(e.target.value))}
                     disabled={isPlaying}

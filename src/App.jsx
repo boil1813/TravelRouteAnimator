@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import MapComponent from './components/MapComponent'
 import Sidebar from './components/Sidebar'
+import pkg from '../package.json'
 
 function App() {
   const [locations, setLocations] = useState([])
   const [isPlaying, setIsPlaying] = useState(false)
-  const [speed, setSpeed] = useState(1) // 0.5x to 5x
+  const [speed, setSpeed] = useState(1) // 0.1x to 3x
+  const [vehicle, setVehicle] = useState('car-red') // car-red, car-blue, bus, plane
 
   const addLocation = (location) => {
     // location: { name: string, lat: number, lng: number }
@@ -35,6 +37,9 @@ function App() {
         isPlaying={isPlaying}
         speed={speed}
         setSpeed={setSpeed}
+        vehicle={vehicle}
+        setVehicle={setVehicle}
+        version={pkg.version}
       />
       <div className="flex-grow-1 position-relative" style={{ height: '100%' }}>
         <MapComponent 
@@ -42,6 +47,7 @@ function App() {
             isPlaying={isPlaying} 
             onAnimationEnd={handleStop}
             speed={speed}
+            vehicle={vehicle}
         />
       </div>
     </div>
