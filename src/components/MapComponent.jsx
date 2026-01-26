@@ -96,12 +96,12 @@ function MapAnimator({ locations, isPlaying, onAnimationEnd }) {
         };
     }, [isPlaying, locations, map, onAnimationEnd]);
 
-    // The moving object (a red circle marker for now to represent 'traveler')
+    // The moving object (a car emoji with vibration effect)
     const travelerIcon = L.divIcon({
         className: 'custom-traveler-icon',
-        html: `<div style="background-color: #ff0000; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
+        html: `<div class="car-icon">🚗</div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
     });
 
     return isPlaying ? (
@@ -115,12 +115,14 @@ function MapAnimator({ locations, isPlaying, onAnimationEnd }) {
 }
 
 const MapComponent = ({ locations, isPlaying, onAnimationEnd }) => {
-    // Default center (Europe/Africa view)
-    const defaultCenter = [20, 0];
+    // Default center (South Korea)
+    const defaultCenter = [36.5, 127.5]; 
     const center = locations.length > 0 ? [locations[locations.length-1].lat, locations[locations.length-1].lng] : defaultCenter;
+    // Default zoom adjusted for Korea
+    const defaultZoom = locations.length > 0 ? 2 : 7;
 
     return (
-        <MapContainer center={center} zoom={2} style={{ height: '100%', width: '100%' }}>
+        <MapContainer center={center} zoom={defaultZoom} style={{ height: '100%', width: '100%' }}>
             <TileLayer
                 attribution='&copy; Google Maps'
                 url="https://mt0.google.com/vt/lyrs=m&hl=ko&x={x}&y={y}&z={z}"
