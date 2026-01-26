@@ -122,8 +122,8 @@ const MapComponent = ({ locations, isPlaying, onAnimationEnd }) => {
     return (
         <MapContainer center={center} zoom={2} style={{ height: '100%', width: '100%' }}>
             <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; Google Maps'
+                url="http://mt0.google.com/vt/lyrs=m&hl=ko&x={x}&y={y}&z={z}"
             />
             
             {/* Markers for all locations */}
