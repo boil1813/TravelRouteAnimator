@@ -123,7 +123,7 @@ const MapComponent = ({ locations, isPlaying, onAnimationEnd }) => {
         <MapContainer center={center} zoom={2} style={{ height: '100%', width: '100%' }}>
             <TileLayer
                 attribution='&copy; Google Maps'
-                url="http://mt0.google.com/vt/lyrs=m&hl=ko&x={x}&y={y}&z={z}"
+                url="https://mt0.google.com/vt/lyrs=m&hl=ko&x={x}&y={y}&z={z}"
             />
             
             {/* Markers for all locations */}
