@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Form, ListGroup, Spinner } from 'react-bootstrap';
 
-const Sidebar = ({ locations, addLocation, removeLocation, onPlay, isPlaying }) => {
+const Sidebar = ({ locations, addLocation, removeLocation, onPlay, isPlaying, speed, setSpeed }) => {
     const [query, setQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -80,6 +80,21 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, isPlaying }) 
                         </div>
                     )}
                 </ListGroup>
+            </div>
+
+            <div className="mb-3 px-1">
+                <Form.Label className="small text-muted d-flex justify-content-between">
+                    <span>이동 속도</span>
+                    <span className="fw-bold">{speed}x</span>
+                </Form.Label>
+                <Form.Range 
+                    min={0.5} 
+                    max={5} 
+                    step={0.5} 
+                    value={speed} 
+                    onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                    disabled={isPlaying}
+                />
             </div>
 
             <div className="d-grid gap-2">

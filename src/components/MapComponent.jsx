@@ -15,40 +15,54 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// Haversine formula to calculate distance (km)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; 
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
 // Custom hook component to handle animation logic
-function MapAnimator({ locations, isPlaying, onAnimationEnd }) {
+function MapAnimator({ locations, isPlaying, onAnimationEnd, speed }) {
     const map = useMap();
     const markerRef = useRef(null);
     const animationRef = useRef(null);
+    const [isFlying, setIsFlying] = useState(false);
 
     useEffect(() => {
         if (!isPlaying || locations.length < 2) return;
 
         let startTime = null;
-        const segmentDuration = 2000; // 2 seconds per leg
-
         let currentSegment = 0;
         
         // Start from first location
         const startLoc = locations[0];
         
-        // Initial setup
         if (markerRef.current) {
             markerRef.current.setLatLng([startLoc.lat, startLoc.lng]);
             markerRef.current.setOpacity(1);
         }
         
-        // Zoom to start
         map.setView([startLoc.lat, startLoc.lng], 6, { animate: true });
+
+        // Determine initial mode
+        const firstDist = calculateDistance(locations[0].lat, locations[0].lng, locations[1].lat, locations[1].lng);
+        setIsFlying(firstDist > 400);
 
         const animate = (timestamp) => {
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
+            
+            // Adjust duration by speed
+            const segmentDuration = 2000 / speed; 
 
             if (elapsed < segmentDuration) {
-                // Interpolate
                 const progress = elapsed / segmentDuration;
-                // Easing function for smoother start/stop per segment could be added here
                 
                 const start = locations[currentSegment];
                 const end = locations[currentSegment + 1];
@@ -58,12 +72,8 @@ function MapAnimator({ locations, isPlaying, onAnimationEnd }) {
 
                 if (markerRef.current) {
                     markerRef.current.setLatLng([lat, lng]);
-                    
-                    // Rotate icon based on bearing (simplified)
-                    // In a real app, calculate bearing between start and end
                 }
                 
-                // Follow the marker
                 map.panTo([lat, lng], { animate: false }); 
 
                 animationRef.current = requestAnimationFrame(animate);
@@ -72,7 +82,14 @@ function MapAnimator({ locations, isPlaying, onAnimationEnd }) {
                 currentSegment++;
                 if (currentSegment < locations.length - 1) {
                     // Next segment
-                    startTime = null; // Reset time for next segment
+                    startTime = null; 
+                    
+                    // Check next segment distance
+                    const nextStart = locations[currentSegment];
+                    const nextEnd = locations[currentSegment + 1];
+                    const dist = calculateDistance(nextStart.lat, nextStart.lng, nextEnd.lat, nextEnd.lng);
+                    setIsFlying(dist > 400);
+
                     animationRef.current = requestAnimationFrame(animate);
                 } else {
                     // Animation finished
@@ -85,7 +102,6 @@ function MapAnimator({ locations, isPlaying, onAnimationEnd }) {
             }
         };
 
-        // Little delay before starting animation to let map zoom happen
         const timer = setTimeout(() => {
             animationRef.current = requestAnimationFrame(animate);
         }, 1000);
@@ -94,12 +110,11 @@ function MapAnimator({ locations, isPlaying, onAnimationEnd }) {
             clearTimeout(timer);
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
-    }, [isPlaying, locations, map, onAnimationEnd]);
+    }, [isPlaying, locations, map, onAnimationEnd, speed]);
 
-    // The moving object (a car emoji with vibration effect)
     const travelerIcon = L.divIcon({
         className: 'custom-traveler-icon',
-        html: `<div class="car-icon">🚗</div>`,
+        html: `<div class="car-icon" style="font-size: 30px;">${isFlying ? '✈️' : '🚗'}</div>`,
         iconSize: [30, 30],
         iconAnchor: [15, 15]
     });
@@ -114,7 +129,7 @@ function MapAnimator({ locations, isPlaying, onAnimationEnd }) {
     ) : null;
 }
 
-const MapComponent = ({ locations, isPlaying, onAnimationEnd }) => {
+const MapComponent = ({ locations, isPlaying, onAnimationEnd, speed }) => {
     // Default center (South Korea)
     const defaultCenter = [36.5, 127.5]; 
     const center = locations.length > 0 ? [locations[locations.length-1].lat, locations[locations.length-1].lng] : defaultCenter;
@@ -146,7 +161,8 @@ const MapComponent = ({ locations, isPlaying, onAnimationEnd }) => {
             <MapAnimator 
                 locations={locations} 
                 isPlaying={isPlaying} 
-                onAnimationEnd={onAnimationEnd} 
+                onAnimationEnd={onAnimationEnd}
+                speed={speed}
             />
         </MapContainer>
     );
