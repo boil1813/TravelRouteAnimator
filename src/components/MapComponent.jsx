@@ -246,8 +246,8 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
         
         const mesh = create3DVehicle(vehType);
         
-        // DRAMATICALLY INCREASED SCALE (5e-5)
-        const modelScale = 5e-5; 
+        // DRAMATICALLY INCREASED SCALE (2e-4)
+        const modelScale = 2e-4; 
         mesh.scale.set(modelScale, modelScale, modelScale);
         
         // ROTATE TO STAND UP (Y-up to Z-up)
@@ -332,6 +332,15 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
         if (mapInstance.loaded()) draw();
         else mapInstance.once('load', draw);
     }, [routePath, isPlaying]);
+
+    // Handle Resize on Play
+    useEffect(() => {
+        if (isPlaying && map.current) {
+            setTimeout(() => {
+                map.current.resize();
+            }, 50);
+        }
+    }, [isPlaying]);
 
     // 3. Animation Loop
     useEffect(() => {

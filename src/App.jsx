@@ -40,17 +40,16 @@ function App() {
   }
 
   return (
-    <div className="h-100 w-100 bg-light">
-      {!isPlaying ? (
-        <div className="container h-100 d-flex flex-column align-items-center justify-content-center py-4">
-           {/* Setup Screen */}
+    <div className="h-100 w-100 bg-light position-relative">
+      
+      {/* Setup Screen - Overlay when NOT playing */}
+      {!isPlaying && (
+        <div className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-light" style={{ zIndex: 1050 }}>
            <Sidebar 
              locations={locations} 
              addLocation={addLocation} 
              removeLocation={removeLocation} 
              onPlay={handlePlay}
-             // These props are no longer used by Sidebar for display, but kept for interface consistency if needed, 
-             // though Sidebar ignores them now.
              onPause={handlePause}
              onResume={handleResume}
              onStop={handleStop}
@@ -63,8 +62,10 @@ function App() {
              version={pkg.version}
            />
         </div>
-      ) : (
-        <div className="container h-100 py-3 py-md-5 d-flex align-items-center justify-content-center">
+      )}
+
+      {/* Map Screen - Always mounted but z-index handled or hidden */}
+      <div className={`container h-100 py-3 py-md-5 d-flex align-items-center justify-content-center ${!isPlaying ? 'd-none' : ''}`}>
           <div className="row w-100 shadow-lg bg-white rounded overflow-hidden" style={{ height: '85vh', minHeight: '500px' }}>
             {/* Map Area */}
             <div className="col-lg-8 col-md-7 p-0 position-relative bg-dark h-100">
@@ -128,7 +129,7 @@ function App() {
 
                 <div className="mt-auto pt-3 border-top">
                     <small className="text-muted d-block text-center mb-1" style={{ fontSize: '0.7rem' }}>Sponsored</small>
-                    {/* [AdSense Area - Side Panel] */}
+                    {/* [AdSense Area - Side Banner] */}
                     <div className="bg-white border rounded d-flex align-items-center justify-content-center text-muted small" 
                          style={{ height: '200px', backgroundColor: '#f8f9fa' }}>
                         Google AdSense<br/>(Side Banner)
@@ -137,7 +138,6 @@ function App() {
             </div>
           </div>
         </div>
-      )}
     </div>
   )
 }
