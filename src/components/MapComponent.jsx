@@ -7,9 +7,9 @@ import * as THREE from 'three';
 const create3DVehicle = (type) => {
     const group = new THREE.Group();
     
-    // Common Materials (Use Lambert for better visibility/performance)
-    const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
-    const glassMaterial = new THREE.MeshLambertMaterial({ color: 0x81d4fa, transparent: true, opacity: 0.8 });
+    // Use BasicMaterial for guaranteed visibility (unaffected by lighting)
+    const wheelMaterial = new THREE.MeshBasicMaterial({ color: 0x333333 });
+    const glassMaterial = new THREE.MeshBasicMaterial({ color: 0x81d4fa, transparent: true, opacity: 0.8 });
     
     // Helper to create wheels
     const createWheels = (xOffset, zOffset, yPos = 0.5) => {
@@ -17,20 +17,17 @@ const create3DVehicle = (type) => {
         wheelGeo.rotateX(Math.PI / 2);
         
         const w1 = new THREE.Mesh(wheelGeo, wheelMaterial);
-        w1.position.set(xOffset, yPos, zOffset); // Left
-        // w1.castShadow = true; // Shadow maps might be tricky with MapLibre, disable for now
+        w1.position.set(xOffset, yPos, zOffset);
         
         const w2 = new THREE.Mesh(wheelGeo, wheelMaterial);
-        w2.position.set(xOffset, yPos, -zOffset); // Right
-        // w2.castShadow = true;
+        w2.position.set(xOffset, yPos, -zOffset);
         
         return [w1, w2];
     };
 
     if (type === 'plane') {
-        // --- PLANE MODEL ---
-        const bodyColor = new THREE.MeshLambertMaterial({ color: 0xffffff }); 
-        const wingColor = new THREE.MeshLambertMaterial({ color: 0x2196f3 });
+        const bodyColor = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
+        const wingColor = new THREE.MeshBasicMaterial({ color: 0x2196f3 });
 
         // Fuselage
         const fuselage = new THREE.Mesh(new THREE.CapsuleGeometry(1.2, 4, 4, 8), bodyColor);
@@ -39,7 +36,7 @@ const create3DVehicle = (type) => {
         group.add(fuselage);
 
         // Wings
-        const wingGeo = new THREE.BoxGeometry(2, 0.2, 10); // Wider wings
+        const wingGeo = new THREE.BoxGeometry(2, 0.2, 10);
         const wings = new THREE.Mesh(wingGeo, wingColor);
         wings.position.set(0, 8, 0);
         group.add(wings);
@@ -52,23 +49,14 @@ const create3DVehicle = (type) => {
         
         // Propeller
         const propGeo = new THREE.BoxGeometry(0.2, 2.5, 0.2);
-        const prop = new THREE.Mesh(propGeo, new THREE.MeshLambertMaterial({ color: 0xff0000 }));
+        const prop = new THREE.Mesh(propGeo, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
         prop.position.set(2.2, 8, 0);
         group.add(prop);
-        
-        // Shadow (Simulated as a dark circle mesh on the "ground" of the group)
-        const shadowGeo = new THREE.CircleGeometry(3, 16);
-        const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 });
-        const shadow = new THREE.Mesh(shadowGeo, shadowMat);
-        shadow.rotation.x = -Math.PI / 2;
-        shadow.position.y = 0.5; 
-        group.add(shadow);
         
         group.userData.isPlane = true;
 
     } else if (type === 'bus') {
-        // --- BUS MODEL ---
-        const busColor = new THREE.MeshLambertMaterial({ color: 0xffc107 }); 
+        const busColor = new THREE.MeshBasicMaterial({ color: 0xffc107 }); 
 
         // Body
         const body = new THREE.Mesh(new THREE.BoxGeometry(6, 2.5, 2.4), busColor);
@@ -76,8 +64,7 @@ const create3DVehicle = (type) => {
         group.add(body);
         
         // Windows
-        const windowGeo = new THREE.BoxGeometry(5.8, 1, 2.5);
-        const windows = new THREE.Mesh(windowGeo, glassMaterial);
+        const windows = new THREE.Mesh(new THREE.BoxGeometry(5.8, 1, 2.5), glassMaterial);
         windows.position.y = 2.5;
         group.add(windows);
 
@@ -93,7 +80,7 @@ const create3DVehicle = (type) => {
         let carColorHex = 0xd32f2f; // Red
         if (type === 'car-blue') carColorHex = 0x1976d2; // Blue
         
-        const carMat = new THREE.MeshLambertMaterial({ color: carColorHex });
+        const carMat = new THREE.MeshBasicMaterial({ color: carColorHex });
 
         // Chassis
         const chassis = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 1.8), carMat);
@@ -117,7 +104,7 @@ const create3DVehicle = (type) => {
         ];
         wheels.forEach(w => group.add(w));
         
-        // Headlights (Basic material to glow)
+        // Headlights
         const lightGeo = new THREE.BoxGeometry(0.1, 0.4, 0.4);
         const lightMat = new THREE.MeshBasicMaterial({ color: 0xffeb3b });
         
@@ -257,20 +244,12 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
         
         const mesh = create3DVehicle(vehType);
         
-        // DRAMATICALLY INCREASED SCALE
-        // Mercator world size is 1.0. 
-        // We want the car to be visible.
-        // Try 5e-5 (0.00005). 
-        // 0.00005 * 40,000,000m = 2000 meters? 
-        // That makes the car 2km long. 
-        // For a world map animation, this is usually what we want (icon size).
+        // DRAMATICALLY INCREASED SCALE (5e-5)
         const modelScale = 5e-5; 
-        
         mesh.scale.set(modelScale, modelScale, modelScale);
         
-        // Initial Rotation Correction
-        // Our models face +X
-        // We handle bearing in loop.
+        // ROTATE TO STAND UP (Y-up to Z-up)
+        mesh.rotation.x = Math.PI / 2;
         
         sceneRef.current.add(mesh);
         vehicleMeshRef.current = mesh;
@@ -326,6 +305,9 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
                 }
             });
 
+            // Safe Layer Addition
+            const beforeId = mapInstance.getLayer('3d-model') ? '3d-model' : undefined;
+
             mapInstance.addLayer({
                 id: 'route-layer',
                 type: 'line',
@@ -336,7 +318,7 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
                     'line-width': 8,
                     'line-opacity': 0.8
                 }
-            }, '3d-model'); // Draw line BELOW model
+            }, beforeId);
 
             if (!isPlaying) {
                 const bounds = new maplibregl.LngLatBounds();
@@ -363,10 +345,9 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
 
         const animate = (timestamp) => {
             if (!lastTimeRef.current) lastTimeRef.current = timestamp;
-            // const deltaTime = timestamp - lastTimeRef.current; // Not used yet
             lastTimeRef.current = timestamp;
 
-            const pointsPerFrame = speed * 0.3; // Speed factor
+            const pointsPerFrame = speed * 0.3; 
             
             if (!animationRef.currentProgress) animationRef.currentProgress = progressRef.current;
             animationRef.currentProgress += pointsPerFrame;
@@ -384,66 +365,33 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
                 const lng = currentPos[0] + (nextPos[0] - currentPos[0]) * residue;
                 const lat = currentPos[1] + (nextPos[1] - currentPos[1]) * residue;
 
+                let bearing = 0;
+
                 // Update 3D Model Position
                 if (vehicleMeshRef.current) {
                     const coord = maplibregl.MercatorCoordinate.fromLngLat([lng, lat], 0);
                     vehicleMeshRef.current.position.set(coord.x, coord.y, coord.z);
                     
-                    // Bearing
-                    const bearing = calculateBearing(currentPos[1], currentPos[0], nextPos[1], nextPos[0]);
-                    // Three.js rotation is radians.
-                    // Map bearing: 0 is North (up). +Rotation is CW.
-                    // Three.js: +Y is Up in screen (usually), but here we map mercator.
-                    // Usually Mercator X is East, Y is South (in Web Mercator?). 
-                    // Wait, MapLibre coords: (0,0) top left. X right, Y down.
-                    // So North is -Y.
-                    // Bearing 0 (North) -> should face -Y.
+                    bearing = calculateBearing(currentPos[1], currentPos[0], nextPos[1], nextPos[0]);
+                    const zRot = (-bearing + 90) * (Math.PI / 180);
                     
-                    // Let's calibrate rotation visually. 
-                    // Standard math bearing (0 = N, 90 = E).
-                    // Convert to radians: -bearing * (PI/180).
-                    // Also need offset.
-                    // Let's try: rotation.z = -bearing * Math.PI / 180 + offset.
+                    // Rotate Z (bearing) then X (stand up) using ZXY order
+                    vehicleMeshRef.current.rotation.set(Math.PI / 2, zRot, 0, 'ZXY'); 
                     
-                    // Experiment:
-                    // If bearing is 90 (East), car should face +X.
-                    // If bearing is 180 (South), car should face +Y.
-                    // Our Car Model +X is forward.
-                    // So 90 deg bearing -> 0 deg rotation (if 0 is +X).
-                    // 180 deg bearing -> -90 deg rotation?
-                    
-                    // Bearing: N(0), E(90), S(180), W(270)
-                    // Unit circle: E(0), N(90), W(180), S(270)
-                    // Relation: MathAngle = 90 - Bearing.
-                    
-                    // Our model forward is +X.
-                    // So we want model to point to MathAngle.
-                    // rotation.z = (90 - bearing) * deg2rad.
-                    // But MapLibre Y is down? 
-                    // Let's assume standard right-handed Z up for now in Three.js layer setup?
-                    // Actually we scaled Y by -1 in render function: .scale(new THREE.Vector3(1, -1, 1));
-                    // So Y is Up in Three.js space relative to map? No, Y is South if inverted?
-                    
-                    // Simplest: rotation.z = (-bearing + 90) * (Math.PI / 180);
-                    // If bearing 90 (E), rot=0. Model +X faces E. Correct.
-                    // If bearing 0 (N), rot=90. Model +X faces N (-Y in map? +Y in three if flipped?).
-                    
-                    vehicleMeshRef.current.rotation.z = (-bearing + 90) * (Math.PI / 180);
-                    
-                    // Tilt for plane
                     if (vehicleMeshRef.current.userData.isPlane) {
-                         vehicleMeshRef.current.position.z += 0.00002; // Height offset in Mercator (approx)
-                         // Banking effect could be added here
+                         vehicleMeshRef.current.position.z += 0.00002; 
                     }
                 }
 
                 // Camera Logic
                 map.current.jumpTo({
                     center: [lng, lat],
-                    zoom: 16, // Close up for 3D view
-                    pitch: 60, // Angled view
-                    bearing: bearing // Camera follows car
+                    zoom: 16, 
+                    pitch: 60, 
+                    bearing: bearing 
                 });
+                
+                map.current.triggerRepaint();
 
                 animationRef.current = requestAnimationFrame(animate);
             } else {
