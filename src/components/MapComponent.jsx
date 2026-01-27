@@ -124,6 +124,7 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
         }
     };
 
+    // Update Vehicle Mesh when type changes
     const updateVehicleModel = (vehType) => {
         if (!worldGroupRef.current) return;
         
@@ -133,11 +134,23 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
         
         const mesh = create3DVehicle(vehType);
         
-        const modelScale = 3e-4; 
+        // OPTIMIZED SCALE: 2.5e-6 (Approx 20x real size, looks like a clear map icon)
+        const modelScale = 2.5e-6; 
         mesh.scale.set(modelScale, modelScale, modelScale);
         mesh.rotation.x = Math.PI / 2;
         
-        mesh.traverse((obj) => { if(obj.isMesh) obj.frustumCulled = false; });
+        // VISIBILITY HACKS: Force render on top of everything
+        mesh.traverse((obj) => { 
+            if (obj.isMesh) {
+                obj.frustumCulled = false;
+                obj.renderOrder = 999; // Draw last
+                
+                // Clone material to avoid affecting Sidebar preview
+                obj.material = obj.material.clone();
+                obj.material.depthTest = false;
+                obj.material.depthWrite = false;
+            }
+        });
         
         worldGroupRef.current.add(mesh);
         vehicleMeshRef.current = mesh;
