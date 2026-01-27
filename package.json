@@ -1,7 +1,7 @@
 {
   "name": "travel-route-animator",
   "private": true,
-  "version": "0.1.6",
+  "version": "0.1.7",
   "type": "module",
   "homepage": "https://boil1813.github.io/TravelRouteAnimator",
   "scripts": {

@@ -372,7 +372,7 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
                 // Update 3D Model Position
                 if (vehicleMeshRef.current) {
                     const coord = maplibregl.MercatorCoordinate.fromLngLat([lng, lat], 0);
-                    vehicleMeshRef.current.position.set(coord.x, coord.y, coord.z);
+                    vehicleMeshRef.current.position.set(coord.x, coord.y, coord.z + 0.0000005);
                     
                     bearing = calculateBearing(currentPos[1], currentPos[0], nextPos[1], nextPos[0]);
                     const zRot = (-bearing + 90) * (Math.PI / 180);
@@ -385,24 +385,11 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
                     }
                 }
 
-                    // Bearing
-                    const bearing = calculateBearing(currentPos[1], currentPos[0], nextPos[1], nextPos[0]);
-                    const zRot = (-bearing + 90) * (Math.PI / 180);
-                    
-                    // Rotate Z (bearing) then X (stand up) using ZXY order
-                    vehicleMeshRef.current.rotation.set(Math.PI / 2, zRot, 0, 'ZXY');
-                    
-                    // Tilt for plane
-                    if (vehicleMeshRef.current.userData.isPlane) {
-                         vehicleMeshRef.current.position.z += 0.00002; 
-                    }
-                }
-
                 // Camera Logic
                 map.current.jumpTo({
                     center: [lng, lat],
-                    zoom: 16, // Close up for 3D view
-                    pitch: 60, // Angled view
+                    zoom: 16, 
+                    pitch: 60, 
                     bearing: 0 // FIXED NORTH UP
                 });
                 
