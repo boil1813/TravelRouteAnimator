@@ -133,10 +133,71 @@ const create3DVehicle = (type) => {
     return group;
 };
 
-// ... (calculateBearing remains same) ...
+function calculateBearing(lat1, lon1, lat2, lon2) {
+    const startLat = lat1 * Math.PI / 180;
+    const startLng = lon1 * Math.PI / 180;
+    const endLat = lat2 * Math.PI / 180;
+    const endLng = lon2 * Math.PI / 180;
 
-// Inside MapComponent...
-// Replace addThreeJSLayer and updateVehicleModel
+    const y = Math.sin(endLng - startLng) * Math.cos(endLat);
+    const x = Math.cos(startLat) * Math.sin(endLat) -
+              Math.sin(startLat) * Math.cos(endLat) * Math.cos(endLng - startLng);
+    const brng = Math.atan2(y, x);
+    return (brng * 180 / Math.PI + 360) % 360;
+}
+
+const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, vehicle }) => {
+    const mapContainer = useRef(null);
+    const map = useRef(null);
+    const animationRef = useRef(null);
+    
+    // Three.js refs
+    const sceneRef = useRef(null);
+    const cameraRef = useRef(null);
+    const rendererRef = useRef(null);
+    const vehicleMeshRef = useRef(null);
+    
+    const [routePath, setRoutePath] = useState([]);
+    const progressRef = useRef(0);
+    const lastTimeRef = useRef(0);
+
+    // Initialize Map
+    useEffect(() => {
+        if (map.current) return;
+        
+        map.current = new maplibregl.Map({
+            container: mapContainer.current,
+            style: {
+                version: 8,
+                sources: {
+                    'google-tiles': {
+                        type: 'raster',
+                        tiles: ['https://mt0.google.com/vt/lyrs=m&hl=ko&x={x}&y={y}&z={z}'],
+                        tileSize: 256,
+                        attribution: 'Google Maps'
+                    }
+                },
+                layers: [{
+                    id: 'google-tiles-layer',
+                    type: 'raster',
+                    source: 'google-tiles',
+                    minzoom: 0, maxzoom: 22
+                }]
+            },
+            center: [127.5, 36.5],
+            zoom: 7,
+            pitch: 0,
+            bearing: 0,
+            antialias: true 
+        });
+        
+        map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+        
+        map.current.on('load', () => {
+             addThreeJSLayer();
+        });
+
+    }, []);
 
     // Function to add the custom Three.js layer
     const addThreeJSLayer = () => {
