@@ -1,6 +1,75 @@
 import React, { useState } from 'react';
 import { Button, Form, ListGroup, Spinner } from 'react-bootstrap';
 
+const getPreviewSVG = (type) => {
+    switch (type) {
+        case 'car-blue':
+            return (
+                <svg viewBox="0 0 64 64" width="80" height="80">
+                    <g transform="translate(0, -4)">
+                        <circle cx="18" cy="48" r="7" fill="#333" />
+                        <circle cx="46" cy="48" r="7" fill="#333" />
+                        <circle cx="18" cy="48" r="3" fill="#ddd" />
+                        <circle cx="46" cy="48" r="3" fill="#ddd" />
+                        <path d="M10 48 L10 36 Q10 20 32 20 Q54 20 54 36 L54 48 Z" fill="#42a5f5" />
+                        <rect x="8" y="38" width="48" height="12" rx="4" fill="#1e88e5" />
+                        <path d="M16 36 L16 30 Q16 24 32 24 Q48 24 48 30 L48 36 Z" fill="#e3f2fd" />
+                        <circle cx="10" cy="40" r="2.5" fill="#ffeb3b" />
+                        <circle cx="54" cy="40" r="2.5" fill="#ffeb3b" />
+                    </g>
+                </svg>
+            );
+        case 'bus':
+            return (
+                <svg viewBox="0 0 64 64" width="90" height="90">
+                    <g transform="translate(0, -4)">
+                        <circle cx="16" cy="50" r="6" fill="#333" />
+                        <circle cx="48" cy="50" r="6" fill="#333" />
+                        <circle cx="16" cy="50" r="2.5" fill="#999" />
+                        <circle cx="48" cy="50" r="2.5" fill="#999" />
+                        <rect x="8" y="14" width="48" height="38" rx="8" fill="#fbc02d" />
+                        <rect x="8" y="34" width="48" height="18" rx="4" fill="#f9a825" />
+                        <rect x="6" y="30" width="52" height="4" fill="#d32f2f" rx="1" />
+                        <rect x="12" y="18" width="10" height="10" rx="2" fill="#e1f5fe" />
+                        <rect x="24" y="18" width="10" height="10" rx="2" fill="#e1f5fe" />
+                        <rect x="36" y="18" width="10" height="10" rx="2" fill="#e1f5fe" />
+                        <circle cx="10" cy="44" r="2" fill="#fff" />
+                        <circle cx="54" cy="44" r="2" fill="#fff" />
+                    </g>
+                </svg>
+            );
+        case 'plane':
+            return (
+                <svg viewBox="0 0 64 64" width="100" height="100">
+                    <g transform="rotate(-45 32 32)">
+                        <path d="M32 24 L56 36 L32 44 L8 36 Z" fill="#90caf9" />
+                        <path d="M32 52 L42 60 L22 60 Z" fill="#64b5f6" />
+                        <ellipse cx="32" cy="32" rx="14" ry="24" fill="#eeeeee" />
+                        <ellipse cx="32" cy="18" rx="8" ry="5" fill="#4fc3f7" />
+                        <circle cx="32" cy="10" r="2" fill="#ef5350" />
+                    </g>
+                </svg>
+            );
+        case 'car-red':
+        default:
+            return (
+                <svg viewBox="0 0 64 64" width="80" height="80">
+                    <g transform="translate(0, -4)">
+                        <circle cx="18" cy="48" r="7" fill="#333" />
+                        <circle cx="46" cy="48" r="7" fill="#333" />
+                        <circle cx="18" cy="48" r="3" fill="#ddd" />
+                        <circle cx="46" cy="48" r="3" fill="#ddd" />
+                        <path d="M10 48 L10 36 Q10 22 32 22 Q54 22 54 36 L54 48 Z" fill="#ef5350" />
+                        <rect x="8" y="38" width="48" height="12" rx="4" fill="#c62828" />
+                        <path d="M16 36 L16 32 Q16 26 32 26 Q48 26 48 32 L48 36 Z" fill="#ffebee" />
+                        <circle cx="10" cy="40" r="2.5" fill="#fff59d" />
+                        <circle cx="54" cy="40" r="2.5" fill="#fff59d" />
+                    </g>
+                </svg>
+            );
+    }
+};
+
 const Sidebar = ({ locations, addLocation, removeLocation, onPlay, onPause, onResume, onStop, isPlaying, isPaused, speed, setSpeed, vehicle, setVehicle, version }) => {
     const [query, setQuery] = useState('');
     const [loading, setLoading] = useState(false);
@@ -94,17 +163,22 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, onPause, onRe
 
             <div className="mb-4 px-1">
                 <Form.Label className="small text-muted mb-1">이동 수단</Form.Label>
-                <Form.Select 
-                    value={vehicle} 
-                    onChange={(e) => setVehicle(e.target.value)} 
-                    size="sm"
-                    className="mb-3"
-                >
-                    <option value="car-red">🚗 스포츠카 (빨강)</option>
-                    <option value="car-blue">🚙 SUV (파랑)</option>
-                    <option value="bus">🚌 투어 버스</option>
-                    <option value="plane">✈️ 비행기 (전용)</option>
-                </Form.Select>
+                <div className="d-flex gap-2 align-items-center mb-3">
+                    <Form.Select 
+                        value={vehicle} 
+                        onChange={(e) => setVehicle(e.target.value)} 
+                        size="sm"
+                        className="flex-grow-1"
+                    >
+                        <option value="car-red">🚗 스포츠카 (빨강)</option>
+                        <option value="car-blue">🚙 SUV (파랑)</option>
+                        <option value="bus">🚌 투어 버스</option>
+                        <option value="plane">✈️ 비행기 (전용)</option>
+                    </Form.Select>
+                    <div className="bg-light border rounded d-flex align-items-center justify-content-center p-1" style={{ width: '60px', height: '60px' }}>
+                        {getPreviewSVG(vehicle)}
+                    </div>
+                </div>
 
                 <Form.Label className="small text-muted d-flex justify-content-between mb-1">
                     <span>이동 속도</span>
