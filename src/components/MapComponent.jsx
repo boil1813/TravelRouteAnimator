@@ -7,9 +7,22 @@ import * as THREE from 'three';
 const create3DVehicle = (type) => {
     const group = new THREE.Group();
     
-    // Use BasicMaterial for guaranteed visibility (unaffected by lighting)
-    const wheelMaterial = new THREE.MeshBasicMaterial({ color: 0x333333 });
-    const glassMaterial = new THREE.MeshBasicMaterial({ color: 0x81d4fa, transparent: true, opacity: 0.8 });
+    // DEBUG: Disable depth test to force visibility ON TOP of map
+    const matOptions = { 
+        color: 0x333333, 
+        depthTest: false, 
+        depthWrite: false 
+    };
+    const wheelMaterial = new THREE.MeshBasicMaterial(matOptions);
+    
+    const glassOptions = { 
+        color: 0x81d4fa, 
+        transparent: true, 
+        opacity: 0.8,
+        depthTest: false,
+        depthWrite: false
+    };
+    const glassMaterial = new THREE.MeshBasicMaterial(glassOptions);
     
     // Helper to create wheels
     const createWheels = (xOffset, zOffset, yPos = 0.5) => {
@@ -26,8 +39,8 @@ const create3DVehicle = (type) => {
     };
 
     if (type === 'plane') {
-        const bodyColor = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
-        const wingColor = new THREE.MeshBasicMaterial({ color: 0x2196f3 });
+        const bodyColor = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false }); 
+        const wingColor = new THREE.MeshBasicMaterial({ color: 0x2196f3, depthTest: false, depthWrite: false });
 
         // Fuselage
         const fuselage = new THREE.Mesh(new THREE.CapsuleGeometry(1.2, 4, 4, 8), bodyColor);
@@ -49,14 +62,14 @@ const create3DVehicle = (type) => {
         
         // Propeller
         const propGeo = new THREE.BoxGeometry(0.2, 2.5, 0.2);
-        const prop = new THREE.Mesh(propGeo, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+        const prop = new THREE.Mesh(propGeo, new THREE.MeshBasicMaterial({ color: 0xff0000, depthTest: false, depthWrite: false }));
         prop.position.set(2.2, 8, 0);
         group.add(prop);
         
         group.userData.isPlane = true;
 
     } else if (type === 'bus') {
-        const busColor = new THREE.MeshBasicMaterial({ color: 0xffc107 }); 
+        const busColor = new THREE.MeshBasicMaterial({ color: 0xffc107, depthTest: false, depthWrite: false }); 
 
         // Body
         const body = new THREE.Mesh(new THREE.BoxGeometry(6, 2.5, 2.4), busColor);
@@ -80,7 +93,7 @@ const create3DVehicle = (type) => {
         let carColorHex = 0xd32f2f; // Red
         if (type === 'car-blue') carColorHex = 0x1976d2; // Blue
         
-        const carMat = new THREE.MeshBasicMaterial({ color: carColorHex });
+        const carMat = new THREE.MeshBasicMaterial({ color: carColorHex, depthTest: false, depthWrite: false });
 
         // Chassis
         const chassis = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 1.8), carMat);
@@ -106,7 +119,7 @@ const create3DVehicle = (type) => {
         
         // Headlights
         const lightGeo = new THREE.BoxGeometry(0.1, 0.4, 0.4);
-        const lightMat = new THREE.MeshBasicMaterial({ color: 0xffeb3b });
+        const lightMat = new THREE.MeshBasicMaterial({ color: 0xffeb3b, depthTest: false, depthWrite: false });
         
         const hl1 = new THREE.Mesh(lightGeo, lightMat);
         hl1.position.set(1.75, 1.2, 0.5);
@@ -252,6 +265,9 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
         
         // ROTATE TO STAND UP (Y-up to Z-up)
         mesh.rotation.x = Math.PI / 2;
+        
+        // Disable Frustum Culling to prevent disappearance
+        mesh.frustumCulled = false;
         
         sceneRef.current.add(mesh);
         vehicleMeshRef.current = mesh;
