@@ -232,11 +232,16 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
                 updateVehicleModel(vehicle);
             },
             render: function (gl, matrix) {
-                // IMPORTANT: MapLibre passes a matrix that expects Mercator coordinates (0..1)
                 const m = new THREE.Matrix4().fromArray(matrix);
+                
+                // Sync Three.js camera with MapLibre
                 this.camera.projectionMatrix = m;
                 this.camera.matrixWorldInverse.identity();
                 this.camera.matrixWorld.identity();
+                
+                // FIX: Ensure renderer knows the current canvas size (crucial since map was hidden)
+                const canvas = map.getCanvas();
+                this.renderer.setSize(canvas.width, canvas.height, false);
                 
                 this.renderer.resetState();
                 this.renderer.render(this.scene, this.camera);
