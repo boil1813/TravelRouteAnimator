@@ -154,6 +154,22 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
         
         worldGroupRef.current.add(mesh);
         vehicleMeshRef.current = mesh;
+
+        // Position vehicle immediately if route exists
+        if (routePath.length > 0) {
+            const idx = Math.floor(progressRef.current);
+            const pos = routePath[idx] || routePath[0];
+            const coord = maplibregl.MercatorCoordinate.fromLngLat([pos[0], pos[1]], 0);
+            mesh.position.set(coord.x, coord.y, coord.z + 0.000001);
+            
+            if (idx < routePath.length - 1) {
+                const next = routePath[idx + 1];
+                const bearing = calculateBearing(pos[1], pos[0], next[1], next[0]);
+                const zRot = (-bearing + 90) * (Math.PI / 180);
+                mesh.rotation.set(Math.PI / 2, zRot, 0, 'ZXY');
+            }
+            if (map.current) map.current.triggerRepaint();
+        }
     };
     
     useEffect(() => {
