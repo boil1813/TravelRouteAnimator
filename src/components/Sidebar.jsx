@@ -59,6 +59,14 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, onPause, onRe
                 {error && <div className="text-danger mt-1 small">{error}</div>}
             </Form>
 
+            <div className="mb-2">
+                {/* [AdSense Area - Top] */}
+                <div className="bg-light border rounded d-flex align-items-center justify-content-center text-muted small" 
+                     style={{ height: '60px', fontSize: '0.7rem' }}>
+                    Sponsored (Top)
+                </div>
+            </div>
+
             <div className="d-flex justify-content-between align-items-center mb-2">
                 <small className="text-muted">여행 경로 ({locations.length})</small>
             </div>
