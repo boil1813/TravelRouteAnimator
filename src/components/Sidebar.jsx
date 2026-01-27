@@ -38,11 +38,11 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, onPause, onRe
     };
 
     return (
-        <div className="d-flex flex-column bg-light border-end p-3 shadow-sm" style={{ width: '350px', height: '100%', minWidth: '300px', zIndex: 1000 }}>
-            <h4 className="mb-4 text-primary fw-bold d-flex align-items-center justify-content-between">
-                <span>✈️ 여행 경로</span>
-                <span className="badge bg-secondary rounded-pill fs-6 fw-normal" style={{ fontSize: '0.6em' }}>v{version}</span>
-            </h4>
+        <div className="d-flex flex-column bg-white p-4 shadow rounded" style={{ width: '100%', maxWidth: '500px', margin: '0 auto', height: 'auto', minHeight: '80vh' }}>
+            <h3 className="mb-4 text-primary fw-bold d-flex align-items-center justify-content-between">
+                <span>✈️ 여행 경로 설정</span>
+                <span className="badge bg-secondary rounded-pill fs-6 fw-normal" style={{ fontSize: '0.5em' }}>v{version}</span>
+            </h3>
             
             <Form onSubmit={handleSearch} className="mb-3">
                 <Form.Group className="mb-2">
@@ -51,10 +51,9 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, onPause, onRe
                         placeholder="도시 이름 입력 (예: 파리, 도쿄)..." 
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        disabled={isPlaying}
                     />
                 </Form.Group>
-                <Button variant="primary" type="submit" className="w-100" disabled={loading || isPlaying}>
+                <Button variant="primary" type="submit" className="w-100" disabled={loading}>
                     {loading ? <Spinner size="sm" animation="border" /> : '여행지 추가'}
                 </Button>
                 {error && <div className="text-danger mt-1 small">{error}</div>}
@@ -64,15 +63,15 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, onPause, onRe
                 <small className="text-muted">여행 경로 ({locations.length})</small>
             </div>
 
-            <div className="flex-grow-1 overflow-auto mb-3 border rounded bg-white">
+            <div className="flex-grow-1 overflow-auto mb-3 border rounded bg-light" style={{ minHeight: '200px' }}>
                 <ListGroup variant="flush">
                     {locations.map((loc, index) => (
-                        <ListGroup.Item key={index} className="d-flex justify-content-between align-items-center">
+                        <ListGroup.Item key={index} className="d-flex justify-content-between align-items-center bg-transparent">
                             <div className="text-truncate me-2" title={loc.fullName}>
                                 <span className="badge bg-secondary me-2 rounded-pill">{index + 1}</span>
                                 {loc.name}
                             </div>
-                            <Button variant="outline-danger" size="sm" onClick={() => removeLocation(index)} disabled={isPlaying} style={{ lineHeight: 1, padding: '0.25rem 0.5rem' }}>
+                            <Button variant="outline-danger" size="sm" onClick={() => removeLocation(index)} style={{ lineHeight: 1, padding: '0.25rem 0.5rem' }}>
                                 ×
                             </Button>
                         </ListGroup.Item>
@@ -85,12 +84,11 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, onPause, onRe
                 </ListGroup>
             </div>
 
-            <div className="mb-3 px-1">
+            <div className="mb-4 px-1">
                 <Form.Label className="small text-muted mb-1">이동 수단</Form.Label>
                 <Form.Select 
                     value={vehicle} 
                     onChange={(e) => setVehicle(e.target.value)} 
-                    disabled={isPlaying}
                     size="sm"
                     className="mb-3"
                 >
@@ -110,39 +108,22 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, onPause, onRe
                     step={0.1} 
                     value={speed} 
                     onChange={(e) => setSpeed(parseFloat(e.target.value))}
-                    disabled={isPlaying}
                 />
             </div>
 
-            <div className="d-grid gap-2">
-                {!isPlaying ? (
-                    <Button 
-                        variant="success" 
-                        size="lg"
-                        onClick={onPlay}
-                        disabled={locations.length < 2}
-                    >
-                        ▶ 경로 애니메이션 재생
-                    </Button>
-                ) : (
-                    <div className="d-flex gap-2">
-                        {isPaused ? (
-                            <Button variant="info" size="lg" className="w-50 text-white" onClick={onResume}>
-                                ▶ 재개
-                            </Button>
-                        ) : (
-                            <Button variant="warning" size="lg" className="w-50 text-white" onClick={onPause}>
-                                ⏸ 일시정지
-                            </Button>
-                        )}
-                        <Button variant="danger" size="lg" className="w-50" onClick={onStop}>
-                            ⏹ 종료
-                        </Button>
-                    </div>
-                )}
+            <div className="d-grid gap-2 mb-3">
+                <Button 
+                    variant="success" 
+                    size="lg"
+                    onClick={onPlay}
+                    disabled={locations.length < 2}
+                    className="fw-bold py-3"
+                >
+                    ▶ 여행 시작하기
+                </Button>
             </div>
             {locations.length < 2 && (
-                <div className="text-center mt-2 small text-muted">최소 2개 이상의 장소를 추가해주세요.</div>
+                <div className="text-center mb-3 small text-muted">최소 2개 이상의 장소를 추가해주세요.</div>
             )}
             
             <div className="mt-auto pt-3 border-top">
@@ -152,9 +133,9 @@ const Sidebar = ({ locations, addLocation, removeLocation, onPlay, onPause, onRe
                     Paste your AdSense script code here.
                     For example: <ins className="adsbygoogle" ...></ins>
                 */}
-                <div className="bg-white border rounded d-flex align-items-center justify-content-center text-muted small" 
-                     style={{ height: '100px', backgroundColor: '#f8f9fa' }}>
-                    Google AdSense<br/>Place Here
+                <div className="bg-light border rounded d-flex align-items-center justify-content-center text-muted small" 
+                     style={{ height: '90px' }}>
+                    Google AdSense Area
                 </div>
             </div>
         </div>
