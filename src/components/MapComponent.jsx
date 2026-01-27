@@ -207,16 +207,12 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
             renderingMode: '3d',
             onAdd: function (map, gl) {
                 this.camera = new THREE.Camera();
+                this.camera.matrixAutoUpdate = false; // CRITICAL: Prevent Three.js from overriding the projection matrix
+                
                 this.scene = new THREE.Scene();
                 
-                // Brighter Lights
-                const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Full bright
-                this.scene.add(ambientLight);
+                // No lights needed for MeshBasicMaterial
                 
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-                directionalLight.position.set(100, 100, 100);
-                this.scene.add(directionalLight);
-
                 this.renderer = new THREE.WebGLRenderer({
                     canvas: map.getCanvas(),
                     context: gl,
@@ -264,8 +260,8 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
         
         const mesh = create3DVehicle(vehType);
         
-        // DRAMATICALLY INCREASED SCALE (2e-4)
-        const modelScale = 2e-4; 
+        // HUGE SCALE for Debugging/Visibility
+        const modelScale = 0.0005; 
         mesh.scale.set(modelScale, modelScale, modelScale);
         
         // ROTATE TO STAND UP (Y-up to Z-up)
