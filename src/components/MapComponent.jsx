@@ -1,6 +1,158 @@
 import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
+import * as THREE from 'three';
 
+// --- 3D Model Generators ---
+
+const create3DVehicle = (type) => {
+    const group = new THREE.Group();
+    
+    // Common Materials
+    const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    const glassMaterial = new THREE.MeshStandardMaterial({ color: 0x81d4fa, transparent: true, opacity: 0.8 });
+    const whiteMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    
+    // Helper to create wheels
+    const createWheels = (xOffset, zOffset, yPos = 0.5) => {
+        const wheelGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.4, 16);
+        wheelGeo.rotateX(Math.PI / 2);
+        
+        const w1 = new THREE.Mesh(wheelGeo, wheelMaterial);
+        w1.position.set(xOffset, yPos, zOffset); // Left
+        w1.castShadow = true;
+        
+        const w2 = new THREE.Mesh(wheelGeo, wheelMaterial);
+        w2.position.set(xOffset, yPos, -zOffset); // Right
+        w2.castShadow = true;
+        
+        return [w1, w2];
+    };
+
+    if (type === 'plane') {
+        // --- PLANE MODEL ---
+        const bodyColor = new THREE.MeshStandardMaterial({ color: 0xffffff }); // White plane
+        const wingColor = new THREE.MeshStandardMaterial({ color: 0x2196f3 }); // Blue wings
+
+        // Fuselage
+        const fuselage = new THREE.Mesh(new THREE.CapsuleGeometry(1.2, 4, 4, 8), bodyColor);
+        fuselage.rotation.z = Math.PI / 2;
+        fuselage.position.y = 8; // Flying high
+        fuselage.castShadow = true;
+        group.add(fuselage);
+
+        // Wings
+        const wingGeo = new THREE.BoxGeometry(2, 0.2, 8);
+        const wings = new THREE.Mesh(wingGeo, wingColor);
+        wings.position.set(0, 8, 0);
+        wings.castShadow = true;
+        group.add(wings);
+
+        // Tail
+        const tailGeo = new THREE.BoxGeometry(1, 0.2, 3);
+        const tail = new THREE.Mesh(tailGeo, wingColor);
+        tail.position.set(-2, 8.5, 0);
+        tail.castShadow = true;
+        group.add(tail);
+        
+        // Propeller (Simplified)
+        const propGeo = new THREE.BoxGeometry(0.2, 2.5, 0.2);
+        const prop = new THREE.Mesh(propGeo, new THREE.MeshStandardMaterial({ color: 0xff0000 }));
+        prop.position.set(2.2, 8, 0);
+        
+        // Animate propeller later if possible, but static for now is fine
+        group.add(prop);
+        
+        // Shadow (Fake shadow on ground)
+        const shadowGeo = new THREE.CircleGeometry(2, 16);
+        const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 });
+        const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+        shadow.rotation.x = -Math.PI / 2;
+        shadow.position.y = 0.2; // Just above ground
+        group.add(shadow);
+        
+        // Store type for altitude handling
+        group.userData.isPlane = true;
+
+    } else if (type === 'bus') {
+        // --- BUS MODEL ---
+        const busColor = new THREE.MeshStandardMaterial({ color: 0xffc107 }); // Yellow
+
+        // Body
+        const body = new THREE.Mesh(new THREE.BoxGeometry(6, 2.5, 2.4), busColor);
+        body.position.y = 2.0; // Lift up
+        body.castShadow = true;
+        group.add(body);
+        
+        // Windows
+        const windowGeo = new THREE.BoxGeometry(5.8, 1, 2.5);
+        const windows = new THREE.Mesh(windowGeo, glassMaterial);
+        windows.position.y = 2.5;
+        group.add(windows);
+
+        // Wheels
+        const wheels = [
+            ...createWheels(1.8, 1.2, 0.6),
+            ...createWheels(-1.8, 1.2, 0.6)
+        ];
+        wheels.forEach(w => group.add(w));
+
+    } else {
+        // --- CAR MODEL (Default & Red & Blue) ---
+        let carColorHex = 0xd32f2f; // Red default
+        if (type === 'car-blue') carColorHex = 0x1976d2; // Blue
+        
+        const carMat = new THREE.MeshStandardMaterial({ color: carColorHex });
+
+        // Chassis
+        const chassis = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 1.8), carMat);
+        chassis.position.y = 1.0;
+        chassis.castShadow = true;
+        group.add(chassis);
+
+        // Cabin
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 1.6), glassMaterial);
+        cabin.position.set(-0.2, 2.1, 0);
+        group.add(cabin);
+        
+        // Roof
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 1.6), carMat);
+        roof.position.set(-0.2, 2.65, 0);
+        group.add(roof);
+
+        // Wheels
+        const wheels = [
+            ...createWheels(1.0, 1.0, 0.6),
+            ...createWheels(-1.0, 1.0, 0.6)
+        ];
+        wheels.forEach(w => group.add(w));
+        
+        // Headlights
+        const lightGeo = new THREE.BoxGeometry(0.1, 0.4, 0.4);
+        const lightMat = new THREE.MeshStandardMaterial({ color: 0xffeb3b, emissive: 0xffeb3b, emissiveIntensity: 0.5 });
+        
+        const hl1 = new THREE.Mesh(lightGeo, lightMat);
+        hl1.position.set(1.75, 1.2, 0.5);
+        group.add(hl1);
+        
+        const hl2 = new THREE.Mesh(lightGeo, lightMat);
+        hl2.position.set(1.75, 1.2, -0.5);
+        group.add(hl2);
+    }
+    
+    // Scale the whole group to fit map units roughly
+    // Map units are large? No, we will scale at insertion.
+    // Let's keep local scale 1.0 and scale in the map layer.
+    
+    // Rotate so +X is forward?
+    // In our models:
+    // Car: Length is X axis (3.5), Width is Z axis (1.8).
+    // Headlights at +X.
+    // So +X is forward.
+    
+    return group;
+};
+
+// --- Helper Math ---
 function calculateBearing(lat1, lon1, lat2, lon2) {
     const startLat = lat1 * Math.PI / 180;
     const startLng = lon1 * Math.PI / 180;
@@ -14,120 +166,19 @@ function calculateBearing(lat1, lon1, lat2, lon2) {
     return (brng * 180 / Math.PI + 360) % 360;
 }
 
-const getVehicleSVG = (type, isFlying) => {
-    const shadow = 'filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));';
-    
-    // Common styles for cute aesthetic
-    // Car body style: Rounded, slightly cartoonish
-    
-    if (isFlying && type !== 'plane') {
-        // "Flying" generic vehicle effect (maybe wings on the car?) -> Let's keep a cute generic flying saucer or winged dot
-        return `<svg viewBox="0 0 64 64" width="80" height="80" style="${shadow} overflow: visible;"><g transform="rotate(0 32 32)">
-            <ellipse cx="32" cy="32" rx="20" ry="12" fill="#e040fb" stroke="#7b1fa2" stroke-width="2"/>
-            <path d="M12 32 Q32 10 52 32" fill="#f3e5f5" opacity="0.8"/>
-            <circle cx="32" cy="24" r="8" fill="#e1bee7" />
-            <circle cx="20" cy="40" r="3" fill="white" opacity="0.6"/>
-            <circle cx="32" cy="42" r="3" fill="white" opacity="0.6"/>
-            <circle cx="44" cy="40" r="3" fill="white" opacity="0.6"/>
-        </g></svg>`;
-    }
-
-    switch (type) {
-        case 'car-blue': 
-            // Cute Blue Car: Rounded beetle style
-            return `<svg viewBox="0 0 64 64" width="60" height="60" style="${shadow}">
-                <g transform="translate(0, -4)">
-                    <!-- Wheels -->
-                    <circle cx="18" cy="48" r="7" fill="#333" />
-                    <circle cx="46" cy="48" r="7" fill="#333" />
-                    <circle cx="18" cy="48" r="3" fill="#ddd" />
-                    <circle cx="46" cy="48" r="3" fill="#ddd" />
-                    <!-- Body -->
-                    <path d="M10 48 L10 36 Q10 20 32 20 Q54 20 54 36 L54 48 Z" fill="#42a5f5" />
-                    <rect x="8" y="38" width="48" height="12" rx="4" fill="#1e88e5" />
-                    <!-- Windows -->
-                    <path d="M16 36 L16 30 Q16 24 32 24 Q48 24 48 30 L48 36 Z" fill="#e3f2fd" />
-                    <!-- Lights -->
-                    <circle cx="10" cy="40" r="2.5" fill="#ffeb3b" />
-                    <circle cx="54" cy="40" r="2.5" fill="#ffeb3b" />
-                </g>
-            </svg>`;
-            
-        case 'bus': 
-            // Cute Bus: Rounded loaf
-            return `<svg viewBox="0 0 64 64" width="70" height="70" style="${shadow}">
-                <g transform="translate(0, -4)">
-                    <!-- Wheels -->
-                    <circle cx="16" cy="50" r="6" fill="#333" />
-                    <circle cx="48" cy="50" r="6" fill="#333" />
-                    <circle cx="16" cy="50" r="2.5" fill="#999" />
-                    <circle cx="48" cy="50" r="2.5" fill="#999" />
-                    <!-- Body -->
-                    <rect x="8" y="14" width="48" height="38" rx="8" fill="#fbc02d" />
-                    <rect x="8" y="34" width="48" height="18" rx="4" fill="#f9a825" />
-                    <!-- Stripe -->
-                    <rect x="6" y="30" width="52" height="4" fill="#d32f2f" rx="1" />
-                    <!-- Windows -->
-                    <rect x="12" y="18" width="10" height="10" rx="2" fill="#e1f5fe" />
-                    <rect x="24" y="18" width="10" height="10" rx="2" fill="#e1f5fe" />
-                    <rect x="36" y="18" width="10" height="10" rx="2" fill="#e1f5fe" />
-                    <!-- Headlights -->
-                    <circle cx="10" cy="44" r="2" fill="#fff" />
-                    <circle cx="54" cy="44" r="2" fill="#fff" />
-                </g>
-            </svg>`;
-            
-        case 'plane': 
-            // Cute Plane: Tubby
-            return `<svg viewBox="0 0 64 64" width="80" height="80" style="${shadow}">
-                <g transform="rotate(-45 32 32)">
-                    <!-- Wings -->
-                    <path d="M32 24 L56 36 L32 44 L8 36 Z" fill="#90caf9" />
-                    <!-- Tail -->
-                    <path d="M32 52 L42 60 L22 60 Z" fill="#64b5f6" />
-                    <!-- Body -->
-                    <ellipse cx="32" cy="32" rx="14" ry="24" fill="#eeeeee" />
-                    <!-- Cockpit -->
-                    <ellipse cx="32" cy="18" rx="8" ry="5" fill="#4fc3f7" />
-                    <!-- Engine/Propeller Hint -->
-                    <circle cx="32" cy="10" r="2" fill="#ef5350" />
-                </g>
-            </svg>`;
-            
-        case 'car-red': 
-        default: 
-            // Cute Red Car
-            return `<svg viewBox="0 0 64 64" width="60" height="60" style="${shadow}">
-                <g transform="translate(0, -4)">
-                    <!-- Wheels -->
-                    <circle cx="18" cy="48" r="7" fill="#333" />
-                    <circle cx="46" cy="48" r="7" fill="#333" />
-                    <circle cx="18" cy="48" r="3" fill="#ddd" />
-                    <circle cx="46" cy="48" r="3" fill="#ddd" />
-                    <!-- Body -->
-                    <path d="M10 48 L10 36 Q10 22 32 22 Q54 22 54 36 L54 48 Z" fill="#ef5350" />
-                    <rect x="8" y="38" width="48" height="12" rx="4" fill="#c62828" />
-                    <!-- Windows -->
-                    <path d="M16 36 L16 32 Q16 26 32 26 Q48 26 48 32 L48 36 Z" fill="#ffebee" />
-                    <!-- Lights -->
-                    <circle cx="10" cy="40" r="2.5" fill="#fff59d" />
-                    <circle cx="54" cy="40" r="2.5" fill="#fff59d" />
-                </g>
-            </svg>`;
-    }
-};
-
 const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, vehicle }) => {
     const mapContainer = useRef(null);
     const map = useRef(null);
-    const marker = useRef(null);
     const animationRef = useRef(null);
     
-    // Store the detailed path (coordinates)
-    const [routePath, setRoutePath] = useState([]);
+    // Three.js refs
+    const sceneRef = useRef(null);
+    const cameraRef = useRef(null);
+    const rendererRef = useRef(null);
+    const vehicleMeshRef = useRef(null);
     
-    // Track animation progress
-    const progressRef = useRef(0); // Index in routePath
+    const [routePath, setRoutePath] = useState([]);
+    const progressRef = useRef(0);
     const lastTimeRef = useRef(0);
 
     // Initialize Map
@@ -156,22 +207,110 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
             center: [127.5, 36.5],
             zoom: 7,
             pitch: 0,
-            bearing: 0
+            bearing: 0,
+            antialias: true // Important for 3D
         });
         
         map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
         
-        const el = document.createElement('div');
-        el.className = 'traveler-marker';
-        // Icon wrapper for rotation
-        el.innerHTML = `<div id="traveler-icon-wrapper" style="width:60px; height:60px; transition: transform 0.1s linear;"></div>`;
-        
-        marker.current = new maplibregl.Marker({ element: el })
-            .setLngLat([127.5, 36.5])
-            .addTo(map.current);
-            
-        marker.current.getElement().style.opacity = '0';
+        // Add 3D Layer when loaded
+        map.current.on('load', () => {
+             addThreeJSLayer();
+        });
+
     }, []);
+
+    // Function to add the custom Three.js layer
+    const addThreeJSLayer = () => {
+        const customLayer = {
+            id: '3d-model',
+            type: 'custom',
+            renderingMode: '3d',
+            onAdd: function (map, gl) {
+                // 1. Setup Three.js
+                this.camera = new THREE.Camera();
+                this.scene = new THREE.Scene();
+                
+                // Lights
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                this.scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(0, 70, 100).normalize();
+                this.scene.add(directionalLight);
+
+                // Renderer
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: map.getCanvas(),
+                    context: gl,
+                    antialias: true,
+                    alpha: true
+                });
+                this.renderer.autoClear = false;
+                this.renderer.shadowMap.enabled = true;
+
+                // Save refs
+                cameraRef.current = this.camera;
+                sceneRef.current = this.scene;
+                rendererRef.current = this.renderer;
+                
+                // Add initial vehicle
+                updateVehicleModel(vehicle);
+            },
+            render: function (gl, matrix) {
+                const m = new THREE.Matrix4().fromArray(matrix);
+                const l = new THREE.Matrix4()
+                    .makeTranslation(maplibregl.MercatorCoordinate.fromLngLat([0, 0], 0).x, maplibregl.MercatorCoordinate.fromLngLat([0, 0], 0).y, 0)
+                    .scale(new THREE.Vector3(1, -1, 1)); // Flip Y for Three.js
+                
+                // This is simpler: just set projection matrix.
+                this.camera.projectionMatrix = m;
+                
+                this.renderer.resetState();
+                this.renderer.render(this.scene, this.camera);
+                map.triggerRepaint();
+            }
+        };
+
+        if (!map.current.getLayer('3d-model')) {
+            map.current.addLayer(customLayer);
+        }
+    };
+
+    // Update Vehicle Mesh when type changes
+    const updateVehicleModel = (vehType) => {
+        if (!sceneRef.current) return;
+        
+        // Remove old
+        if (vehicleMeshRef.current) {
+            sceneRef.current.remove(vehicleMeshRef.current);
+        }
+        
+        // Create new
+        const mesh = create3DVehicle(vehType);
+        
+        // Scale it. 
+        // MapLibre Mercator units are 0..1 world space.
+        // At zoom 0, world is 512px (roughly).
+        // We need a scale factor.
+        // Usually, 1 meter approx.
+        // Let's pick a scale that looks good. 
+        // 1 Mercator unit = Earth Circumference.
+        // We need it to be small. 
+        // maplibregl.MercatorCoordinate.fromLngLat(lng, lat, altitude) gives coords.
+        // 1 meter in mercator units is tiny.
+        const modelScale = 2e-7; // Trial and error or calculation
+        // Actually, let's use a standard scaling factor based on latitude, but for visual effect constant is okay.
+        
+        mesh.scale.set(modelScale, modelScale, modelScale);
+        
+        sceneRef.current.add(mesh);
+        vehicleMeshRef.current = mesh;
+    };
+    
+    useEffect(() => {
+        updateVehicleModel(vehicle);
+    }, [vehicle]);
 
     // 1. Calculate Route (OSRM)
     useEffect(() => {
@@ -182,53 +321,30 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
         }
 
         const fetchRoute = async () => {
-            // Build coordinate string for OSRM
             const coords = locations.map(l => `${l.lng},${l.lat}`).join(';');
-            
             try {
-                // Try OSRM for driving route
-                // Note: OSRM might fail for very long distances or ocean crossing.
-                // We will handle fallback below.
                 const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`);
                 const data = await response.json();
-                
                 if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
                     setRoutePath(data.routes[0].geometry.coordinates);
                 } else {
-                    // Fallback to straight line
                     throw new Error('OSRM No route');
                 }
             } catch (err) {
-                console.warn("Routing fallback to straight line:", err);
-                // Fallback: Generate points between locations for smoother animation if needed, 
-                // but MapLibre can animate straight lines too.
-                // Just use the main locations as the path.
-                const fallbackPath = locations.map(l => [l.lng, l.lat]);
-                setRoutePath(fallbackPath);
+                console.warn("Routing fallback", err);
+                setRoutePath(locations.map(l => [l.lng, l.lat]));
             }
         };
-
         fetchRoute();
-        progressRef.current = 0; // Reset progress when route changes
+        progressRef.current = 0;
     }, [locations]);
 
-    // 2. Draw Path & Update Initial Icon
+    // 2. Draw Path (Line Layer)
     useEffect(() => {
         if (!map.current || routePath.length === 0) return;
         const mapInstance = map.current;
 
         const draw = () => {
-            // Set start pos
-            marker.current.setLngLat(routePath[0]);
-            marker.current.getElement().style.opacity = '1';
-            
-            // Set Icon
-            const iconWrapper = document.getElementById('traveler-icon-wrapper');
-            if (iconWrapper) {
-                iconWrapper.innerHTML = getVehicleSVG(vehicle, false);
-            }
-
-            // Route Line
             if (mapInstance.getSource('route')) {
                 if (mapInstance.getLayer('route-layer')) mapInstance.removeLayer('route-layer');
                 mapInstance.removeSource('route');
@@ -249,10 +365,10 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
                 layout: { 'line-join': 'round', 'line-cap': 'round' },
                 paint: {
                     'line-color': '#ff0055',
-                    'line-width': 6,
+                    'line-width': 8,
                     'line-opacity': 0.8
                 }
-            });
+            }, '3d-model'); // Draw line BELOW model
 
             if (!isPlaying) {
                 const bounds = new maplibregl.LngLatBounds();
@@ -263,66 +379,28 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
 
         if (mapInstance.loaded()) draw();
         else mapInstance.once('load', draw);
-    }, [routePath, vehicle, isPlaying]); // Redraw if vehicle changes too
+    }, [routePath, isPlaying]);
 
     // 3. Animation Loop
     useEffect(() => {
-        if (!isPlaying || isPaused || routePath.length < 2) {
+        if (!isPlaying || isPaused || routePath.length < 2 || !map.current) {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
             lastTimeRef.current = 0;
             return;
         }
 
-        const mapInstance = map.current;
-        const iconWrapper = document.getElementById('traveler-icon-wrapper');
-
-        // Reset if starting fresh
         if (progressRef.current >= routePath.length - 1) {
             progressRef.current = 0;
         }
 
         const animate = (timestamp) => {
             if (!lastTimeRef.current) lastTimeRef.current = timestamp;
-            const deltaTime = timestamp - lastTimeRef.current;
+            // const deltaTime = timestamp - lastTimeRef.current; // Not used yet
             lastTimeRef.current = timestamp;
 
-            // Speed logic: 
-            // OSRM points are dense. We can move point by point.
-            // Adjust "points per second" based on speed.
-            // Base: 30 points/sec * speed.
-            // Since we use RAF, we just increment index.
+            const pointsPerFrame = speed * 0.3; // Speed factor
             
-            // Accumulate float index
-            // Let's use a simpler approach: Move 1 index per X ms.
-            // Or just increment index by (speed * factor).
-            
-            // To make it smooth, we interpolate between current index and next.
-            // But let's keep it simple: Just advance integer index for now, 
-            // maybe skip points if speed is high.
-            
-            // For now: 1 point per frame is too fast.
-            // We need a timer or float accumulator.
-            
-            // Let's use a "time bucket" approach
-            // Target: 60fps.
-            // speed 1.0 => traverse entire path in ... say 10 seconds?
-            // Depends on path length.
-            // Let's just say we advance based on speed.
-            
-            // Better: Constant speed on map.
-            // But OSRM segments vary in length.
-            // Simple: Skip points based on speed.
-            
-            const pointsPerFrame = speed * 0.5; // Tweak this factor
-            
-            // Since progressRef is integer in previous logic, let's make it float?
-            // Let's rely on the previous float logic if we want smooth interp.
-            // But with OSRM (thousands of points), integer stepping is fine.
-            
-            // Just use a frame counter or simple addition
-            // We need to store float progress in a Ref
             if (!animationRef.currentProgress) animationRef.currentProgress = progressRef.current;
-            
             animationRef.currentProgress += pointsPerFrame;
             
             const idx = Math.floor(animationRef.currentProgress);
@@ -333,34 +411,74 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
                 
                 const currentPos = routePath[idx];
                 const nextPos = routePath[nextIdx];
-                
-                // Interpolate for smoothness between the two points
                 const residue = animationRef.currentProgress - idx;
                 
                 const lng = currentPos[0] + (nextPos[0] - currentPos[0]) * residue;
                 const lat = currentPos[1] + (nextPos[1] - currentPos[1]) * residue;
 
-                marker.current.setLngLat([lng, lat]);
-
-                // Calculate Rotation
-                const bearing = calculateBearing(currentPos[1], currentPos[0], nextPos[1], nextPos[0]);
-                
-                // Rotate ICON, not Map
-                if (iconWrapper) {
-                    iconWrapper.style.transform = `rotate(${bearing}deg)`;
+                // Update 3D Model Position
+                if (vehicleMeshRef.current) {
+                    const coord = maplibregl.MercatorCoordinate.fromLngLat([lng, lat], 0);
+                    vehicleMeshRef.current.position.set(coord.x, coord.y, coord.z);
+                    
+                    // Bearing
+                    const bearing = calculateBearing(currentPos[1], currentPos[0], nextPos[1], nextPos[0]);
+                    // Three.js rotation is radians.
+                    // Map bearing: 0 is North (up). +Rotation is CW.
+                    // Three.js: +Y is Up in screen (usually), but here we map mercator.
+                    // Usually Mercator X is East, Y is South (in Web Mercator?). 
+                    // Wait, MapLibre coords: (0,0) top left. X right, Y down.
+                    // So North is -Y.
+                    // Bearing 0 (North) -> should face -Y.
+                    
+                    // Let's calibrate rotation visually. 
+                    // Standard math bearing (0 = N, 90 = E).
+                    // Convert to radians: -bearing * (PI/180).
+                    // Also need offset.
+                    // Let's try: rotation.z = -bearing * Math.PI / 180 + offset.
+                    
+                    // Experiment:
+                    // If bearing is 90 (East), car should face +X.
+                    // If bearing is 180 (South), car should face +Y.
+                    // Our Car Model +X is forward.
+                    // So 90 deg bearing -> 0 deg rotation (if 0 is +X).
+                    // 180 deg bearing -> -90 deg rotation?
+                    
+                    // Bearing: N(0), E(90), S(180), W(270)
+                    // Unit circle: E(0), N(90), W(180), S(270)
+                    // Relation: MathAngle = 90 - Bearing.
+                    
+                    // Our model forward is +X.
+                    // So we want model to point to MathAngle.
+                    // rotation.z = (90 - bearing) * deg2rad.
+                    // But MapLibre Y is down? 
+                    // Let's assume standard right-handed Z up for now in Three.js layer setup?
+                    // Actually we scaled Y by -1 in render function: .scale(new THREE.Vector3(1, -1, 1));
+                    // So Y is Up in Three.js space relative to map? No, Y is South if inverted?
+                    
+                    // Simplest: rotation.z = (-bearing + 90) * (Math.PI / 180);
+                    // If bearing 90 (E), rot=0. Model +X faces E. Correct.
+                    // If bearing 0 (N), rot=90. Model +X faces N (-Y in map? +Y in three if flipped?).
+                    
+                    vehicleMeshRef.current.rotation.z = (-bearing + 90) * (Math.PI / 180);
+                    
+                    // Tilt for plane
+                    if (vehicleMeshRef.current.userData.isPlane) {
+                         vehicleMeshRef.current.position.z += 0.00002; // Height offset in Mercator (approx)
+                         // Banking effect could be added here
+                    }
                 }
 
-                // Camera Logic: North Up (Fixed Bearing 0), Pitch 40 (Slight 3D), Follow Center
-                mapInstance.jumpTo({
+                // Camera Logic
+                map.current.jumpTo({
                     center: [lng, lat],
-                    zoom: 10, // Further out as requested
-                    pitch: 40,
-                    bearing: 0 // North up fixed
+                    zoom: 16, // Close up for 3D view
+                    pitch: 60, // Angled view
+                    bearing: bearing // Camera follows car
                 });
 
                 animationRef.current = requestAnimationFrame(animate);
             } else {
-                // End
                 progressRef.current = routePath.length - 1;
                 onAnimationEnd();
             }
@@ -371,7 +489,7 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
-    }, [isPlaying, isPaused, routePath, speed]); // Re-run if these change
+    }, [isPlaying, isPaused, routePath, speed]);
 
     return <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />;
 };
