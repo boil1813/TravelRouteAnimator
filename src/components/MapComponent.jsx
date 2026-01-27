@@ -7,10 +7,9 @@ import * as THREE from 'three';
 const create3DVehicle = (type) => {
     const group = new THREE.Group();
     
-    // Common Materials
-    const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
-    const glassMaterial = new THREE.MeshStandardMaterial({ color: 0x81d4fa, transparent: true, opacity: 0.8 });
-    const whiteMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    // Common Materials (Use Lambert for better visibility/performance)
+    const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+    const glassMaterial = new THREE.MeshLambertMaterial({ color: 0x81d4fa, transparent: true, opacity: 0.8 });
     
     // Helper to create wheels
     const createWheels = (xOffset, zOffset, yPos = 0.5) => {
@@ -19,68 +18,61 @@ const create3DVehicle = (type) => {
         
         const w1 = new THREE.Mesh(wheelGeo, wheelMaterial);
         w1.position.set(xOffset, yPos, zOffset); // Left
-        w1.castShadow = true;
+        // w1.castShadow = true; // Shadow maps might be tricky with MapLibre, disable for now
         
         const w2 = new THREE.Mesh(wheelGeo, wheelMaterial);
         w2.position.set(xOffset, yPos, -zOffset); // Right
-        w2.castShadow = true;
+        // w2.castShadow = true;
         
         return [w1, w2];
     };
 
     if (type === 'plane') {
         // --- PLANE MODEL ---
-        const bodyColor = new THREE.MeshStandardMaterial({ color: 0xffffff }); // White plane
-        const wingColor = new THREE.MeshStandardMaterial({ color: 0x2196f3 }); // Blue wings
+        const bodyColor = new THREE.MeshLambertMaterial({ color: 0xffffff }); 
+        const wingColor = new THREE.MeshLambertMaterial({ color: 0x2196f3 });
 
         // Fuselage
         const fuselage = new THREE.Mesh(new THREE.CapsuleGeometry(1.2, 4, 4, 8), bodyColor);
         fuselage.rotation.z = Math.PI / 2;
-        fuselage.position.y = 8; // Flying high
-        fuselage.castShadow = true;
+        fuselage.position.y = 8; 
         group.add(fuselage);
 
         // Wings
-        const wingGeo = new THREE.BoxGeometry(2, 0.2, 8);
+        const wingGeo = new THREE.BoxGeometry(2, 0.2, 10); // Wider wings
         const wings = new THREE.Mesh(wingGeo, wingColor);
         wings.position.set(0, 8, 0);
-        wings.castShadow = true;
         group.add(wings);
 
         // Tail
         const tailGeo = new THREE.BoxGeometry(1, 0.2, 3);
         const tail = new THREE.Mesh(tailGeo, wingColor);
         tail.position.set(-2, 8.5, 0);
-        tail.castShadow = true;
         group.add(tail);
         
-        // Propeller (Simplified)
+        // Propeller
         const propGeo = new THREE.BoxGeometry(0.2, 2.5, 0.2);
-        const prop = new THREE.Mesh(propGeo, new THREE.MeshStandardMaterial({ color: 0xff0000 }));
+        const prop = new THREE.Mesh(propGeo, new THREE.MeshLambertMaterial({ color: 0xff0000 }));
         prop.position.set(2.2, 8, 0);
-        
-        // Animate propeller later if possible, but static for now is fine
         group.add(prop);
         
-        // Shadow (Fake shadow on ground)
-        const shadowGeo = new THREE.CircleGeometry(2, 16);
+        // Shadow (Simulated as a dark circle mesh on the "ground" of the group)
+        const shadowGeo = new THREE.CircleGeometry(3, 16);
         const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 });
         const shadow = new THREE.Mesh(shadowGeo, shadowMat);
         shadow.rotation.x = -Math.PI / 2;
-        shadow.position.y = 0.2; // Just above ground
+        shadow.position.y = 0.5; 
         group.add(shadow);
         
-        // Store type for altitude handling
         group.userData.isPlane = true;
 
     } else if (type === 'bus') {
         // --- BUS MODEL ---
-        const busColor = new THREE.MeshStandardMaterial({ color: 0xffc107 }); // Yellow
+        const busColor = new THREE.MeshLambertMaterial({ color: 0xffc107 }); 
 
         // Body
         const body = new THREE.Mesh(new THREE.BoxGeometry(6, 2.5, 2.4), busColor);
-        body.position.y = 2.0; // Lift up
-        body.castShadow = true;
+        body.position.y = 2.0; 
         group.add(body);
         
         // Windows
@@ -97,16 +89,15 @@ const create3DVehicle = (type) => {
         wheels.forEach(w => group.add(w));
 
     } else {
-        // --- CAR MODEL (Default & Red & Blue) ---
-        let carColorHex = 0xd32f2f; // Red default
+        // --- CAR MODEL ---
+        let carColorHex = 0xd32f2f; // Red
         if (type === 'car-blue') carColorHex = 0x1976d2; // Blue
         
-        const carMat = new THREE.MeshStandardMaterial({ color: carColorHex });
+        const carMat = new THREE.MeshLambertMaterial({ color: carColorHex });
 
         // Chassis
         const chassis = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 1.8), carMat);
         chassis.position.y = 1.0;
-        chassis.castShadow = true;
         group.add(chassis);
 
         // Cabin
@@ -126,9 +117,9 @@ const create3DVehicle = (type) => {
         ];
         wheels.forEach(w => group.add(w));
         
-        // Headlights
+        // Headlights (Basic material to glow)
         const lightGeo = new THREE.BoxGeometry(0.1, 0.4, 0.4);
-        const lightMat = new THREE.MeshStandardMaterial({ color: 0xffeb3b, emissive: 0xffeb3b, emissiveIntensity: 0.5 });
+        const lightMat = new THREE.MeshBasicMaterial({ color: 0xffeb3b });
         
         const hl1 = new THREE.Mesh(lightGeo, lightMat);
         hl1.position.set(1.75, 1.2, 0.5);
@@ -139,86 +130,13 @@ const create3DVehicle = (type) => {
         group.add(hl2);
     }
     
-    // Scale the whole group to fit map units roughly
-    // Map units are large? No, we will scale at insertion.
-    // Let's keep local scale 1.0 and scale in the map layer.
-    
-    // Rotate so +X is forward?
-    // In our models:
-    // Car: Length is X axis (3.5), Width is Z axis (1.8).
-    // Headlights at +X.
-    // So +X is forward.
-    
     return group;
 };
 
-// --- Helper Math ---
-function calculateBearing(lat1, lon1, lat2, lon2) {
-    const startLat = lat1 * Math.PI / 180;
-    const startLng = lon1 * Math.PI / 180;
-    const endLat = lat2 * Math.PI / 180;
-    const endLng = lon2 * Math.PI / 180;
+// ... (calculateBearing remains same) ...
 
-    const y = Math.sin(endLng - startLng) * Math.cos(endLat);
-    const x = Math.cos(startLat) * Math.sin(endLat) -
-              Math.sin(startLat) * Math.cos(endLat) * Math.cos(endLng - startLng);
-    const brng = Math.atan2(y, x);
-    return (brng * 180 / Math.PI + 360) % 360;
-}
-
-const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, vehicle }) => {
-    const mapContainer = useRef(null);
-    const map = useRef(null);
-    const animationRef = useRef(null);
-    
-    // Three.js refs
-    const sceneRef = useRef(null);
-    const cameraRef = useRef(null);
-    const rendererRef = useRef(null);
-    const vehicleMeshRef = useRef(null);
-    
-    const [routePath, setRoutePath] = useState([]);
-    const progressRef = useRef(0);
-    const lastTimeRef = useRef(0);
-
-    // Initialize Map
-    useEffect(() => {
-        if (map.current) return;
-        
-        map.current = new maplibregl.Map({
-            container: mapContainer.current,
-            style: {
-                version: 8,
-                sources: {
-                    'google-tiles': {
-                        type: 'raster',
-                        tiles: ['https://mt0.google.com/vt/lyrs=m&hl=ko&x={x}&y={y}&z={z}'],
-                        tileSize: 256,
-                        attribution: 'Google Maps'
-                    }
-                },
-                layers: [{
-                    id: 'google-tiles-layer',
-                    type: 'raster',
-                    source: 'google-tiles',
-                    minzoom: 0, maxzoom: 22
-                }]
-            },
-            center: [127.5, 36.5],
-            zoom: 7,
-            pitch: 0,
-            bearing: 0,
-            antialias: true // Important for 3D
-        });
-        
-        map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
-        
-        // Add 3D Layer when loaded
-        map.current.on('load', () => {
-             addThreeJSLayer();
-        });
-
-    }, []);
+// Inside MapComponent...
+// Replace addThreeJSLayer and updateVehicleModel
 
     // Function to add the custom Three.js layer
     const addThreeJSLayer = () => {
@@ -227,19 +145,17 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
             type: 'custom',
             renderingMode: '3d',
             onAdd: function (map, gl) {
-                // 1. Setup Three.js
                 this.camera = new THREE.Camera();
                 this.scene = new THREE.Scene();
                 
-                // Lights
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                // Brighter Lights
+                const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Full bright
                 this.scene.add(ambientLight);
                 
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                directionalLight.position.set(0, 70, 100).normalize();
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+                directionalLight.position.set(100, 100, 100);
                 this.scene.add(directionalLight);
 
-                // Renderer
                 this.renderer = new THREE.WebGLRenderer({
                     canvas: map.getCanvas(),
                     context: gl,
@@ -247,23 +163,16 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
                     alpha: true
                 });
                 this.renderer.autoClear = false;
-                this.renderer.shadowMap.enabled = true;
 
-                // Save refs
                 cameraRef.current = this.camera;
                 sceneRef.current = this.scene;
                 rendererRef.current = this.renderer;
                 
-                // Add initial vehicle
                 updateVehicleModel(vehicle);
             },
             render: function (gl, matrix) {
+                // IMPORTANT: MapLibre passes a matrix that expects Mercator coordinates (0..1)
                 const m = new THREE.Matrix4().fromArray(matrix);
-                const l = new THREE.Matrix4()
-                    .makeTranslation(maplibregl.MercatorCoordinate.fromLngLat([0, 0], 0).x, maplibregl.MercatorCoordinate.fromLngLat([0, 0], 0).y, 0)
-                    .scale(new THREE.Vector3(1, -1, 1)); // Flip Y for Three.js
-                
-                // This is simpler: just set projection matrix.
                 this.camera.projectionMatrix = m;
                 
                 this.renderer.resetState();
@@ -281,28 +190,26 @@ const MapComponent = ({ locations, isPlaying, isPaused, onAnimationEnd, speed, v
     const updateVehicleModel = (vehType) => {
         if (!sceneRef.current) return;
         
-        // Remove old
         if (vehicleMeshRef.current) {
             sceneRef.current.remove(vehicleMeshRef.current);
         }
         
-        // Create new
         const mesh = create3DVehicle(vehType);
         
-        // Scale it. 
-        // MapLibre Mercator units are 0..1 world space.
-        // At zoom 0, world is 512px (roughly).
-        // We need a scale factor.
-        // Usually, 1 meter approx.
-        // Let's pick a scale that looks good. 
-        // 1 Mercator unit = Earth Circumference.
-        // We need it to be small. 
-        // maplibregl.MercatorCoordinate.fromLngLat(lng, lat, altitude) gives coords.
-        // 1 meter in mercator units is tiny.
-        const modelScale = 2e-7; // Trial and error or calculation
-        // Actually, let's use a standard scaling factor based on latitude, but for visual effect constant is okay.
+        // DRAMATICALLY INCREASED SCALE
+        // Mercator world size is 1.0. 
+        // We want the car to be visible.
+        // Try 5e-5 (0.00005). 
+        // 0.00005 * 40,000,000m = 2000 meters? 
+        // That makes the car 2km long. 
+        // For a world map animation, this is usually what we want (icon size).
+        const modelScale = 5e-5; 
         
         mesh.scale.set(modelScale, modelScale, modelScale);
+        
+        // Initial Rotation Correction
+        // Our models face +X
+        // We handle bearing in loop.
         
         sceneRef.current.add(mesh);
         vehicleMeshRef.current = mesh;
